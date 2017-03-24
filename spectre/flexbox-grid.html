@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>flexbox layout and tabs with spectre.css</title>
+    <meta name="author" content="francois.georgy@gmail.com">
+    <link rel="stylesheet" href="spectre.css" />
+    <link rel="stylesheet" href="spectre-exp.css" />
+    <!-- link rel="stylesheet" href="styles.css" / -->
+</head>
+<body>
+    <header class="navbar">
+        <section class="navbar-primary">
+            <a href="#" class="navbar-brand mr-10">Spectre.css</a>
+        </section>
+        <section class="navbar-section">
+            <a href="#" class="btn btn-link">Docs</a>
+            <a href="https://github.com/picturepan2/spectre" class="btn btn-link">GitHub</a>
+        </section>
+        <section class="navbar-section">
+            <div class="input-group input-inline">
+                <input class="form-input" type="text" placeholder="search" />
+                <button class="btn btn-primary input-group-btn">Search</button>
+            </div>
+        </section>
+    </header>
+    <div class="tab">
+        <div class="tab-item active">
+            <a href="#">div tabs</a>
+        </div>
+        <div class="tab-item">
+            <a href="#">without</a>
+        </div>
+        <div class="tab-item">
+            <a href="#">a</a>
+        </div>
+        <div class="tab-item">
+            <a href="#">container</a>
+        </div>
+    </div>
+    <div class="tab tab-block">
+        <div class="tab-item active">
+            <a href="#">div tabs</a>
+        </div>
+        <div class="tab-item">
+            <a href="#">without</a>
+        </div>
+        <div class="tab-item">
+            <a href="#">a</a>
+        </div>
+        <div class="tab-item">
+            <a href="#">container</a>
+        </div>
+    </div>
+    <div class="container">
+        <ul class="tab tab-block">
+            <li class="tab-item">
+                <a href="#">li tabs</a>
+            </li>
+            <li class="tab-item active">
+                <a href="#">in</a>
+            </li>
+            <li class="tab-item">
+                <a href="#">container</a>
+            </li>
+        </ul>
+    </div>
+    <div class="container">
+        <div class="columns col-gapless">
+            <div class="column col-12">
+                <ul class="tab tab-block">
+                    <li class="tab-item">
+                        <a href="#">li tabs</a>
+                    </li>
+                    <li class="tab-item active">
+                        <a href="#">in</a>
+                    </li>
+                    <li class="tab-item">
+                        <a href="#">col-12</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="columns col-gapless">
+            <div class="column col-12">
+                <div class="tab tab-block">
+                    <div class="tab-item">
+                        <a href="#">div tabs</a>
+                    </div>
+                    <div class="tab-item active">
+                        <a href="#">in</a>
+                    </div>
+                    <div class="tab-item">
+                        <a href="#">col-12</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="columns col-gapless">
+            <div class="column col-4">
+                <div data-holder-ipsum-mode="paragraph"></div>
+            </div>
+            <div class="column col-4">
+                <p data-holder-ipsum-mode="paragraph"></p>
+            </div>
+            <div class="column col-4">
+                <p data-holder-ipsum-mode="paragraph"></p>
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column col-12">
+                <p data-holder-ipsum-mode="paragraph"></p>
+            </div>
+        </div>
+        <div class="columns col-gapless">
+            <div class="column col-12">
+                <p data-holder-ipsum-mode="paragraph"></p>
+            </div>
+        </div>
+        <div>
+            <p data-holder-ipsum-mode="paragraph"></p>
+        </div>
+    </div>
+    <script src="holder-ipsum.js"></script>
+</body>
+</html>

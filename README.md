@@ -7,3 +7,7 @@ Miscellaneous tests with some UI frameworks
 - Material Design Lite - https://getmdl.io/
 - Grommet - https://github.com/grommet/grommet
 - React-Toolbox - http://react-toolbox.com/#/
+
+## Tools
+
+- Lorem Ipsum without copy-paste: http://euangoddard.github.io/holder-ipsum/#mode-words
