@@ -1,0 +1,9 @@
+{
+  "name": "UI-lab",
+  "version": "1.0.0",
+  "description": "Miscellaneous tests with some UI frameworks",
+  "main": "index.html",
+  "repository": "https://github.com/francoisgeorgy/UI-lab.git",
+  "author": "fgeorgy <francois.georgy@gmail.com>",
+  "license": "MIT"
+}
