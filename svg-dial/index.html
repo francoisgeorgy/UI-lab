@@ -11,6 +11,7 @@
         }
         .dial {
             height: 50vh;   /* 20% of viewport height */
+            /*height: 120px;*/
             background-color: #aaa;
             display: block;
         }
@@ -60,15 +61,18 @@
 
     var currentTarget;
     var targetRect;
-    var knobCenter;
-    var offx, offy;
+//    var knobCenter;
+//    var offx, offy;
+
+    var pathCenterX = 0;
+    var pathCenterY = 0;
+
+    const RADIUS = 40;
+    const HALF_WIDTH = 50;
+    const HALF_HEIGHT = 50;
 
     function getPath(angle) {
 
-        const RADIUS = 40;
-        const HALF_WIDTH = 50;
-        const HALF_HEIGHT = 50;
-        let p = '';
 
         // compute in standard cartesian coordinates:
 
@@ -76,17 +80,20 @@
         //          50 + (x * 40) = 50 + (-40) = 10
         //          50 + (y * 40) = 50 + (0) = 50
 
+        let startAngle = -180.0;
 
-        let x = Math.cos(-180.0 * Math.PI / 180.0);
-        let y = Math.sin(-180.0 * Math.PI / 180.0);
+        let x = Math.cos(startAngle * Math.PI / 180.0);
+        let y = Math.sin(startAngle * Math.PI / 180.0);
 
         let startX = HALF_WIDTH + (RADIUS * x);
         let startY = HALF_HEIGHT + (RADIUS * y);
 
         console.log(`path start ${x}, ${y}, ${startX}, ${startY}`);
 
-        let endX = HALF_WIDTH + (RADIUS * Math.cos(angle * Math.PI / 180.0));
-        let endY = HALF_HEIGHT + (RADIUS * Math.sin(angle * Math.PI / 180.0));
+//        let endX = HALF_WIDTH + (RADIUS * Math.cos(angle * Math.PI / 180.0));
+//        let endY = HALF_HEIGHT + (RADIUS * Math.sin(angle * Math.PI / 180.0));
+        let endX = HALF_WIDTH + (RADIUS * Math.cos(angle));
+        let endY = HALF_HEIGHT + (RADIUS * Math.sin(angle));
 
         console.log(`path ${endX}, ${endY}`);
 
@@ -95,44 +102,59 @@
 
         console.log(`path ${endX}, ${endY}`);
 
+        let largeArc = angle < 0 ? 1 : 0;
+
         // path.setAttributeNS(null, "d", "M 10,50 A 40,40 0 1,1 50,90 L 50,70");
-        p = `M ${startX},${startY} A ${RADIUS},${RADIUS} 0 1,1 ${endX},${endY}`;
+        let p = `M ${startX},${startY} A ${RADIUS},${RADIUS} 0 ${largeArc},1 ${endX},${endY}`;
 
         return p;
     }
 
     function getCoordinates(e) {
 
-        console.log(`mouse d = ${e.offsetX},${e.offsetY}`);
+        console.log(`mouse d = ${e.offsetX}, ${e.offsetY}`);
 
-        targetRect = currentTarget.getBoundingClientRect();
-
-//        console.log('target rect', targetRect);
-
-        var pathElem = currentTarget.childNodes[2];  // we known that the path is the second child, since we created it ourselves.
-        var pathRect = pathElem.getBoundingClientRect();    // The Element.getBoundingClientRect() method returns the
-                                                            // size of an element and its position RELATIVE TO THE VIEWPORT.
-
-//        console.log('path rect', pathRect);
-
-        // center of path relative to svg bounding rect:
-        let pathCenterX = pathRect.left - targetRect.left + pathRect.width / 2;
-        let pathCenterY = pathRect.top - targetRect.top + pathRect.height / 2;
-
-        console.log(`path center = ${pathCenterX},${pathCenterY}`);
 
         // mouse delta in cartesian coordinate with path center=0,0 and scaled (0..1) relative to path:
-        let dx = (e.offsetX- pathCenterX) / (pathRect.width / 2);
-        let dy = - (e.offsetY - pathCenterY) / (pathRect.height / 2);
+//        let dx = (e.offsetX- pathCenterX) / (pathRect.width / 2);
+//        let dy = - (e.offsetY - pathCenterY) / (pathRect.height / 2);
 
-        console.log(`cartesian coord = ${dx},${dy}`);
+        let dx = (e.offsetX- pathCenterX) / (targetRect.width / 2);
+        let dy = - (e.offsetY - pathCenterY) / (targetRect.width / 2);  // targetRect.width car on a 20px de plus en hauteur pour le label
+
+        console.log(`cartesian coord = ${dx}, ${dy}`);
 
         // convert to polar coordinates
         let angle = Math.atan2(dy, dx);
         let angleDegrees = angle * 180.0 / Math.PI; // rads to degs
-        let distance = Math.sqrt(dx*dx + dy*dy);
+
+        // il faut corriger avec *(HALF_WIDTH/RADIUS) car le container est plus grand que le rayon
+        let distance = Math.sqrt(dx*(HALF_WIDTH/RADIUS)*dx*(HALF_WIDTH/RADIUS) + dy*(HALF_HEIGHT/RADIUS)*dy*(HALF_HEIGHT/RADIUS));
 
         return [dx, dy, angle, angleDegrees, distance];
+
+    }
+
+    function initCoordinates(e) {
+
+        targetRect = currentTarget.getBoundingClientRect();
+
+        console.log('currentTarget', currentTarget);
+
+//        var pathElem = currentTarget.childNodes[2];  // we known that the path is the second child, since we created it ourselves.
+//        var pathRect = pathElem.getBoundingClientRect();    // The Element.getBoundingClientRect() method returns the
+                                                            // size of an element and its position RELATIVE TO THE VIEWPORT.
+//        console.log('pathElem', pathElem);
+//        console.log('path rect', pathRect);
+
+        // center of path relative to svg bounding rect:
+//        let pathCenterX = pathRect.left - targetRect.left + pathRect.width / 2;
+//        let pathCenterY = pathRect.top - targetRect.top + pathRect.height / 2;
+        // path will change and we can not know in advance if the bouding rectangle is a square.
+        pathCenterX = targetRect.width / 2;
+        pathCenterY = pathCenterX;
+
+        console.log(`path center = ${pathCenterX}, ${pathCenterY}`);
 
     }
 
@@ -140,12 +162,12 @@
 
         e.preventDefault();
 
-//        console.log("startDrag", e);
+//        console.log("startDrag");
 
         currentTarget = e.currentTarget;
 
         console.log('currentTarget', currentTarget);
-
+        initCoordinates(e);
         let c = getCoordinates(e);
 
 //        console.log(c);
@@ -157,7 +179,9 @@
         let a = c[3];
         currentTarget.childNodes[0].textContent = a.toFixed(0);
 
-        getPath(c[3]);
+        p = getPath(c[2]);
+
+        currentTarget.childNodes[2].setAttributeNS(null, "d", p);
 
         //infos(e.clientX, e.clientY, dx.toFixed(2), dy.toFixed(2), angleDegrees.toFixed(2), distance.toFixed(2));
         infos(...c);
@@ -166,9 +190,11 @@
 
     function handleDrag(e) {
         e.preventDefault();
-//        console.log("handleDrag", e);
-        const xPosition = e.clientX;
-        const tempY = e.clientY;
+
+        console.log("handleDrag");
+
+//        const xPosition = e.clientX;
+//        const tempY = e.clientY;
 
 //     const cursorPos = [e.clientX, e.clientY];
 //     const normalizedValue = (100 - ((tempY - topPosition) * (100 / (BASE_HEIGHT * scale)))) / 100;
@@ -186,7 +212,7 @@
         let a = c[3];
         currentTarget.childNodes[0].textContent = a.toFixed(0);
 
-        let p = getPath(c[3]);
+        let p = getPath(c[2]);
 
         currentTarget.childNodes[2].setAttributeNS(null, "d", p);
 
