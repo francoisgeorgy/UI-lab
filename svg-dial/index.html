@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>svg in nested grid</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <style>
+        body {
+            padding: 0;
+            margin: 40px 20px;
+        }
+        .dial {
+            height: 50vh;   /* 20% of viewport height */
+            background-color: #aaa;
+            display: block;
+        }
+        .dial text {
+            font-family: sans-serif;
+            font-size: 100%;
+            cursor: default;
+            z-index: 1;
+        }
+        text.value, text.label {
+            text-anchor: middle;
+        }
+        .arc {
+            stroke: black;
+            stroke-width: 4px;
+            fill: transparent;
+        }
+    </style>
+</head>
+<body>
+<!--
+    <svg class="dial" viewBox="0 0 100 120">
+        <text x="50" y="55" class="value">67.89</text>
+        <text x="50" y="110" class="label">Foo Bar</text>
+        <path class="arc" d="M 10,50 A 40,40 0 1,1 50,90 L 50,70"></path>
+    </svg>
+-->
+    <div>
+        <svg class="dial"></svg>
+    </div>
+    <div>
+        <!--abs x, y: <span id="mousexy"></span><br />-->
+        dx, dy: <span id="offsetxy"></span><br />
+        angle: <span id="angle"></span><br />
+        distance: <span id="distance"></span><br />
+    </div>
+</body>
+<script>
+
+
+    function infos(dx, dy, angle, angleDegree, distance) {
+//        $('#mousexy').text(`${x}, ${y}`);
+        $('#offsetxy').text(`${dx.toFixed(2)}, ${dy.toFixed(2)}`);
+        $('#angle').text(`${angleDegree.toFixed(2)}`);
+        $('#distance').text(`${distance.toFixed(2)}`);
+    }
+
+    var currentTarget;
+    var targetRect;
+    var knobCenter;
+    var offx, offy;
+
+    function getPath(angle) {
+
+        const RADIUS = 40;
+        const HALF_WIDTH = 50;
+        const HALF_HEIGHT = 50;
+        let p = '';
+
+        // compute in standard cartesian coordinates:
+
+        // -1,0 --> 10,50
+        //          50 + (x * 40) = 50 + (-40) = 10
+        //          50 + (y * 40) = 50 + (0) = 50
+
+
+        let x = Math.cos(-180.0 * Math.PI / 180.0);
+        let y = Math.sin(-180.0 * Math.PI / 180.0);
+
+        let startX = HALF_WIDTH + (RADIUS * x);
+        let startY = HALF_HEIGHT + (RADIUS * y);
+
+        console.log(`path start ${x}, ${y}, ${startX}, ${startY}`);
+
+        let endX = HALF_WIDTH + (RADIUS * Math.cos(angle * Math.PI / 180.0));
+        let endY = HALF_HEIGHT + (RADIUS * Math.sin(angle * Math.PI / 180.0));
+
+        console.log(`path ${endX}, ${endY}`);
+
+        // convert to SVG coordinates:
+        endY = (2*HALF_WIDTH) - endY;
+
+        console.log(`path ${endX}, ${endY}`);
+
+        // path.setAttributeNS(null, "d", "M 10,50 A 40,40 0 1,1 50,90 L 50,70");
+        p = `M ${startX},${startY} A ${RADIUS},${RADIUS} 0 1,1 ${endX},${endY}`;
+
+        return p;
+    }
+
+    function getCoordinates(e) {
+
+        console.log(`mouse d = ${e.offsetX},${e.offsetY}`);
+
+        targetRect = currentTarget.getBoundingClientRect();
+
+//        console.log('target rect', targetRect);
+
+        var pathElem = currentTarget.childNodes[2];  // we known that the path is the second child, since we created it ourselves.
+        var pathRect = pathElem.getBoundingClientRect();    // The Element.getBoundingClientRect() method returns the
+                                                            // size of an element and its position RELATIVE TO THE VIEWPORT.
+
+//        console.log('path rect', pathRect);
+
+        // center of path relative to svg bounding rect:
+        let pathCenterX = pathRect.left - targetRect.left + pathRect.width / 2;
+        let pathCenterY = pathRect.top - targetRect.top + pathRect.height / 2;
+
+        console.log(`path center = ${pathCenterX},${pathCenterY}`);
+
+        // mouse delta in cartesian coordinate with path center=0,0 and scaled (0..1) relative to path:
+        let dx = (e.offsetX- pathCenterX) / (pathRect.width / 2);
+        let dy = - (e.offsetY - pathCenterY) / (pathRect.height / 2);
+
+        console.log(`cartesian coord = ${dx},${dy}`);
+
+        // convert to polar coordinates
+        let angle = Math.atan2(dy, dx);
+        let angleDegrees = angle * 180.0 / Math.PI; // rads to degs
+        let distance = Math.sqrt(dx*dx + dy*dy);
+
+        return [dx, dy, angle, angleDegrees, distance];
+
+    }
+
+    function startDrag(e) {
+
+        e.preventDefault();
+
+//        console.log("startDrag", e);
+
+        currentTarget = e.currentTarget;
+
+        console.log('currentTarget', currentTarget);
+
+        let c = getCoordinates(e);
+
+//        console.log(c);
+
+        document.addEventListener('mousemove', this.handleDrag, false);
+        document.addEventListener('mouseup', this.endDrag, false);
+
+//        console.log(currentTarget.childNodes[1]);
+        let a = c[3];
+        currentTarget.childNodes[0].textContent = a.toFixed(0);
+
+        getPath(c[3]);
+
+        //infos(e.clientX, e.clientY, dx.toFixed(2), dy.toFixed(2), angleDegrees.toFixed(2), distance.toFixed(2));
+        infos(...c);
+
+    }
+
+    function handleDrag(e) {
+        e.preventDefault();
+//        console.log("handleDrag", e);
+        const xPosition = e.clientX;
+        const tempY = e.clientY;
+
+//     const cursorPos = [e.clientX, e.clientY];
+//     const normalizedValue = (100 - ((tempY - topPosition) * (100 / (BASE_HEIGHT * scale)))) / 100;
+
+//     const {min, max, step} = this.props;
+//     const unnormalizedValue = snap((normalizedValue * (max - min)), step, min);
+
+//     this.setState({topPosition, scale, cursorPos});
+//     if (unnormalizedValue !== this.props.value) {
+//         this.props.onChange(unnormalizedValue);
+//     }
+
+        let c = getCoordinates(e);
+
+        let a = c[3];
+        currentTarget.childNodes[0].textContent = a.toFixed(0);
+
+        let p = getPath(c[3]);
+
+        currentTarget.childNodes[2].setAttributeNS(null, "d", p);
+
+        infos(...c);
+    }
+
+    function endDrag() {
+        console.log("endDrag");
+        document.removeEventListener('mousemove', handleDrag, false);
+        document.removeEventListener('mouseup', endDrag, false);
+        // this.setState(emptyKnobState());
+    }
+
+
+    // https://developer.mozilla.org/en/docs/Web/SVG/Namespaces_Crash_Course
+    //
+    // The first argument for all the DOM2 namespace aware methods must be the namespace name (also known as the namespace URI)
+    // of the element or attribute in question. For SVG elements this is 'http://www.w3.org/2000/svg'.
+    // However, note carefully: the Namespaces in XML 1.1 recommendation states that the namespace name for attributes
+    // without a prefix does not have a value. In other words, ALTHOUGH THE ATTRIBUTES BELONG TO THE NAMESPACE OF THE TAG,
+    // YOU DO NOT USE THE TAG'S NAMESPACE NAME. INSTEAD, YOU MUST USE NULL AS THE NAMESPACE NAME FOR UNQUALIFIED (PREFIXLESS) ATTRIBUTES.
+    // So, to create an SVG rect element using document.createElementNS(), you must write:
+
+    const NS = "http://www.w3.org/2000/svg";
+
+    function createDial(svg, value, label) {
+
+        let valueText = document.createElementNS(NS, "text");
+        valueText.setAttributeNS(null, "x", "50");
+        valueText.setAttributeNS(null, "y", "55");
+        valueText.setAttribute("class", "value");
+        valueText.textContent = value;
+        svg.appendChild(valueText);
+
+        let labelText = document.createElementNS(NS, "text");
+        labelText.setAttributeNS(null, "x", "50");
+        labelText.setAttributeNS(null, "y", "110");
+        labelText.setAttribute("class", "label");
+        labelText.textContent = label;
+        svg.appendChild(labelText);
+
+        // https://www.w3.org/TR/SVG/render.html#RenderingOrder:
+        // Elements in an SVG document fragment have an implicit drawing order, with the first elements in the SVG document
+        // fragment getting "painted" first. Subsequent elements are painted on top of previously painted elements.
+        // ==> first element -> "painted" first
+
+        let path = document.createElementNS(NS, "path");
+        path.setAttributeNS(null, "d", "M 10,50 A 40,40 0 1,1 50,90 L 50,70");
+        path.setAttribute("class", "arc");
+
+        svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+        svg.setAttributeNS(null, "viewBox", "0 0 100 120");
+        svg.setAttribute("class", "dial");
+        svg.appendChild(path);
+
+        $(svg).on("mousedown", function(e) {
+//            console.log("mousedown", e);
+            startDrag(e);
+        });
+
+        return svg;
+    }
+
+    $(function () {
+        var dials = document.querySelectorAll('svg.dial');
+        [].forEach.call(dials, function(item) {
+            createDial(item, 123.45, "Foo bar");
+        });
+    });
+
+</script>
+</html>

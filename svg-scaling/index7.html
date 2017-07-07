@@ -12,9 +12,7 @@
         .wrapper {
             display: grid;
             grid-gap: 10px;
-            /*grid-template-columns: repeat(4, [col] 1fr);*/
             grid-template-columns: repeat(2, 1fr);
-            /*grid-template-rows: repeat(2, [row] auto);*/
             background-color: #fff;
             color: #444;
         }
@@ -26,31 +24,21 @@
             display: flex;
             align-items: center;
         }
-        .s {
-            /*height: 15vh;*/
-            /*margin: 10px;*/
+        .dial {
             height: 100%;
-            /*height: 22.5vh; !* 75% of 30vh *!*/
             background-color: #999;
-            display: block; /* https://stackoverflow.com/questions/24626908/how-to-get-rid-of-extra-space-below-svg-in-div-element */
-            /*float:left;*/
+            display: block;
+        }
+        .dial text {
+            font-family: sans-serif;
+            font-size: 100%;
         }
         .arc {
             stroke: black;
             stroke-width: 4px;
             fill: transparent;
         }
-        .label {
-            font-family: sans-serif;
-            font-size: 100%;
-            width:100%;
-            text-align: center;
-        }
-        .s text {
-            font-family: sans-serif;
-            font-size: 100%;
-        }
-        .s tspan {
+        text.value, text.label {
             text-anchor: middle;
         }
     </style>
@@ -58,75 +46,15 @@
 <body>
     <div class="wrapper">
         <div class="box">
-            <svg id="svg1" class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-<!--
-            <svg class="s" viewBox="0 0 100 120">
+
+            <svg class="dial" viewBox="0 0 100 120">
                 <path class="arc" d="M 10,50 A 40,40 0 1,1 50,90 L 50,70"></path>
-                <text x="50" y="55"><tspan>123.45</tspan></text>
-                <text x="50" y="110"><tspan>Label</tspan></text>
+                <text x="50" y="55" class="value">67.89</text>
+                <text x="50" y="110" class="label">Foo Bar</text>
             </svg>
--->
-        </div>
-        <div class="box">
+
             <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-        </div>
-        <div class="box">
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-        </div>
-        <div class="box">
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-        </div>
-        <div class="box">
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-        </div>
-        <div class="box">
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-        </div>
-        <div class="box">
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-        </div>
-        <div class="box">
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
-            <svg class="dial"></svg>
+
         </div>
     </div>
 </body>
@@ -186,18 +114,13 @@
 
     $(function () {
 
-//        let e = createSVG("#svg1");
-        //document.body.appendChild(e);
-
-//        let g = document.querySelector(".d");
-//        console.log(g);
 
         // https://toddmotto.com/ditch-the-array-foreach-call-nodelist-hack/
-        var g = document.querySelectorAll('svg.dial');
-        [].forEach.call(g, function (item) {
-            console.log(item);
-            createSVG(item);
-        });
+//        var g = document.querySelectorAll('svg.dial');
+//        [].forEach.call(g, function (item) {
+//            console.log(item);
+//            createSVG(item);
+//        });
 
     });
 
