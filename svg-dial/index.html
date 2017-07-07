@@ -71,6 +71,9 @@
     const HALF_WIDTH = 50;
     const HALF_HEIGHT = 50;
 
+
+    var currentAngle = 0; // pour mousewheel
+
     function getPath(angle) {
 
 
@@ -88,19 +91,19 @@
         let startX = HALF_WIDTH + (RADIUS * x);
         let startY = HALF_HEIGHT + (RADIUS * y);
 
-        console.log(`path start ${x}, ${y}, ${startX}, ${startY}`);
+//        console.log(`path start ${x}, ${y}, ${startX}, ${startY}`);
 
 //        let endX = HALF_WIDTH + (RADIUS * Math.cos(angle * Math.PI / 180.0));
 //        let endY = HALF_HEIGHT + (RADIUS * Math.sin(angle * Math.PI / 180.0));
         let endX = HALF_WIDTH + (RADIUS * Math.cos(angle));
         let endY = HALF_HEIGHT + (RADIUS * Math.sin(angle));
 
-        console.log(`path ${endX}, ${endY}`);
+//        console.log(`path ${endX}, ${endY}`);
 
         // convert to SVG coordinates:
         endY = (2*HALF_WIDTH) - endY;
 
-        console.log(`path ${endX}, ${endY}`);
+//        console.log(`path ${endX}, ${endY}`);
 
         let largeArc = angle < 0 ? 1 : 0;
 
@@ -122,11 +125,13 @@
         let dx = (e.offsetX- pathCenterX) / (targetRect.width / 2);
         let dy = - (e.offsetY - pathCenterY) / (targetRect.width / 2);  // targetRect.width car on a 20px de plus en hauteur pour le label
 
-        console.log(`cartesian coord = ${dx}, ${dy}`);
+//        console.log(`cartesian coord = ${dx}, ${dy}`);
 
         // convert to polar coordinates
         let angle = Math.atan2(dy, dx);
         let angleDegrees = angle * 180.0 / Math.PI; // rads to degs
+
+        currentAngle = angleDegrees;
 
         // il faut corriger avec *(HALF_WIDTH/RADIUS) car le container est plus grand que le rayon
         let distance = Math.sqrt(dx*(HALF_WIDTH/RADIUS)*dx*(HALF_WIDTH/RADIUS) + dy*(HALF_HEIGHT/RADIUS)*dy*(HALF_HEIGHT/RADIUS));
@@ -139,7 +144,7 @@
 
         targetRect = currentTarget.getBoundingClientRect();
 
-        console.log('currentTarget', currentTarget);
+//        console.log('currentTarget', currentTarget);
 
 //        var pathElem = currentTarget.childNodes[2];  // we known that the path is the second child, since we created it ourselves.
 //        var pathRect = pathElem.getBoundingClientRect();    // The Element.getBoundingClientRect() method returns the
@@ -162,11 +167,17 @@
 
         e.preventDefault();
 
-//        console.log("startDrag");
+        // e.currentTarget :
+        // Identifies the current target for the event, as the event traverses the DOM. It always REFERS TO THE ELEMENT
+        // TO WHICH THE EVENT HANDLER HAS BEEN ATTACHED, as opposed to event.target which identifies the element on
+        // which the event occurred.
+
+//        console.log("startDrag", e.target, e.currentTarget);
 
         currentTarget = e.currentTarget;
 
         console.log('currentTarget', currentTarget);
+
         initCoordinates(e);
         let c = getCoordinates(e);
 
@@ -227,6 +238,105 @@
     }
 
 
+
+
+
+
+
+
+
+
+
+
+
+    // Reasonable defaults
+    var PIXEL_STEP  = 10;
+    var LINE_HEIGHT = 40;
+    var PAGE_HEIGHT = 800;
+
+    function normalizeWheel(/*object*/ event) /*object*/ {
+        var sX = 0, sY = 0,       // spinX, spinY
+            pX = 0, pY = 0;       // pixelX, pixelY
+
+        // Legacy
+        if ('detail'      in event) { sY = event.detail; }
+        if ('wheelDelta'  in event) { sY = -event.wheelDelta / 120; }
+        if ('wheelDeltaY' in event) { sY = -event.wheelDeltaY / 120; }
+        if ('wheelDeltaX' in event) { sX = -event.wheelDeltaX / 120; }
+
+        // side scrolling on FF with DOMMouseScroll
+        if ( 'axis' in event && event.axis === event.HORIZONTAL_AXIS ) {
+            sX = sY;
+            sY = 0;
+        }
+
+        pX = sX * PIXEL_STEP;
+        pY = sY * PIXEL_STEP;
+
+        if ('deltaY' in event) { pY = event.deltaY; }
+        if ('deltaX' in event) { pX = event.deltaX; }
+
+        if ((pX || pY) && event.deltaMode) {
+            if (event.deltaMode == 1) {          // delta in LINE units
+                pX *= LINE_HEIGHT;
+                pY *= LINE_HEIGHT;
+            } else {                             // delta in PAGE units
+                pX *= PAGE_HEIGHT;
+                pY *= PAGE_HEIGHT;
+            }
+        }
+
+        // Fall-back if spin cannot be determined
+        if (pX && !sX) { sX = (pX < 1) ? -1 : 1; }
+        if (pY && !sY) { sY = (pY < 1) ? -1 : 1; }
+
+        return { spinX  : sX,
+            spinY  : sY,
+            pixelX : pX,
+            pixelY : pY };
+    }
+
+
+
+
+    function mouseWheelHandler(e) {
+
+        // https://stackoverflow.com/questions/5527601/normalizing-mousewheel-speed-across-browsers
+        // https://github.com/facebook/fixed-data-table/blob/master/src/vendor_upstream/dom/normalizeWheel.js
+
+        // cross-browser wheel delta
+        var e = window.event || e; // old IE support
+
+        e.preventDefault();
+
+        console.log('mouse wheel', e.wheelDelta, e.wheelDeltaX, e.wheelDeltaY, e.detail);
+
+        let n = normalizeWheel(e);
+        console.log(n);
+
+        var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+//        myimage.style.width = Math.max(50, Math.min(800, myimage.width + (30 * delta))) + "px";
+//        console.log('mouse wheel', delta, e.target, e.currentTarget);
+
+        currentTarget = e.currentTarget;
+
+        currentAngle += delta * 10;
+
+        let p = getPath(currentAngle * Math.PI / 180.0);
+
+        // TODO: timing --> speed
+        // https://stackoverflow.com/questions/22593286/detect-measure-scroll-speed
+
+        currentTarget.childNodes[0].textContent = currentAngle.toFixed(0);
+
+        currentTarget.childNodes[2].setAttributeNS(null, "d", p);
+
+        return false;
+    }
+
+
+
+
     // https://developer.mozilla.org/en/docs/Web/SVG/Namespaces_Crash_Course
     //
     // The first argument for all the DOM2 namespace aware methods must be the namespace name (also known as the namespace URI)
@@ -268,9 +378,13 @@
         svg.setAttribute("class", "dial");
         svg.appendChild(path);
 
+        currentAngle = -90;
+
         $(svg).on("mousedown", function(e) {
-//            console.log("mousedown", e);
             startDrag(e);
+        });
+        $(svg).on("mousewheel", function(e) {
+            mouseWheelHandler(e);
         });
 
         return svg;
