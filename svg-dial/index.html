@@ -67,23 +67,57 @@
     var pathCenterX = 0;
     var pathCenterY = 0;
 
+    var startX;
+    var startY;
+
     const RADIUS = 40;
     const HALF_WIDTH = 50;
     const HALF_HEIGHT = 50;
 
+    const ZERO_AT = 270.0;    // the 0 degree will be at 270 degrees.
 
+    var arcStart = 30;
+    var arcEnd = 330;
     var currentAngle = 0; // pour mousewheel
 
+    function setAngle(angle) {
+        currentAngle = angle;
+        // apply limits
+        if (currentAngle > 360) currentAngle = 360.0;
+        if (currentAngle < 0) currentAngle = 0.0;
+    }
+
+    function getAngle(angle) {
+        return currentAngle;
+    }
+
+    /**
+     * Return polar coordinates angle from our "dial coordinates" angle.
+     */
+    function normalizeAngle(angle) {
+        let a = ZERO_AT - angle;
+        if (a < 0) a = a + 360.0;
+        return a;
+    }
+
+    /**
+     * angle is in degrees
+     */
     function getPath(angle) {
 
+        //TODO: apply limits or let it circle?
+
+        console.log(`getPath ${angle}`);
 
         // compute in standard cartesian coordinates:
 
         // -1,0 --> 10,50
         //          50 + (x * 40) = 50 + (-40) = 10
         //          50 + (y * 40) = 50 + (0) = 50
-
-        let startAngle = -180.0;
+/*
+        let startAngle = 180.0;
+//        let startAngle = normalizeAngle(arcStart);
+        // TODO: calculer coordonnées de départ une seule fois lors de l'initialisation
 
         let x = Math.cos(startAngle * Math.PI / 180.0);
         let y = Math.sin(startAngle * Math.PI / 180.0);
@@ -92,7 +126,7 @@
         let startY = HALF_HEIGHT + (RADIUS * y);
 
 //        console.log(`path start ${x}, ${y}, ${startX}, ${startY}`);
-
+*/
 //        let endX = HALF_WIDTH + (RADIUS * Math.cos(angle * Math.PI / 180.0));
 //        let endY = HALF_HEIGHT + (RADIUS * Math.sin(angle * Math.PI / 180.0));
         let endX = HALF_WIDTH + (RADIUS * Math.cos(angle));
@@ -105,7 +139,7 @@
 
 //        console.log(`path ${endX}, ${endY}`);
 
-        let largeArc = angle < 0 ? 1 : 0;
+        let largeArc = angle > Math.PI ? 1 : 0;
 
         // path.setAttributeNS(null, "d", "M 10,50 A 40,40 0 1,1 50,90 L 50,70");
         let p = `M ${startX},${startY} A ${RADIUS},${RADIUS} 0 ${largeArc},1 ${endX},${endY}`;
@@ -129,14 +163,16 @@
 
         // convert to polar coordinates
         let angle = Math.atan2(dy, dx);
-        let angleDegrees = angle * 180.0 / Math.PI; // rads to degs
 
-        currentAngle = angleDegrees;
+        if (angle < 0) angle = 2*Math.PI + angle;
+//        if (dy < 0) angle = Math.PI*2.0 + angle;
+
+        setAngle(angle * 180.0 / Math.PI);  // rads to degs
 
         // il faut corriger avec *(HALF_WIDTH/RADIUS) car le container est plus grand que le rayon
         let distance = Math.sqrt(dx*(HALF_WIDTH/RADIUS)*dx*(HALF_WIDTH/RADIUS) + dy*(HALF_HEIGHT/RADIUS)*dy*(HALF_HEIGHT/RADIUS));
 
-        return [dx, dy, angle, angleDegrees, distance];
+        return [dx, dy, angle, getAngle(), distance];
 
     }
 
@@ -159,7 +195,23 @@
         pathCenterX = targetRect.width / 2;
         pathCenterY = pathCenterX;
 
+
         console.log(`path center = ${pathCenterX}, ${pathCenterY}`);
+
+
+
+        let startAngle = 180.0;
+//        let startAngle = normalizeAngle(arcStart);
+        // TODO: calculer coordonnées de départ une seule fois lors de l'initialisation
+
+        let x = Math.cos(startAngle * Math.PI / 180.0);
+        let y = Math.sin(startAngle * Math.PI / 180.0);
+
+        startX = HALF_WIDTH + (RADIUS * x);
+        startY = HALF_HEIGHT + (RADIUS * y);
+
+//        console.log(`path start ${x}, ${y}, ${startX}, ${startY}`);
+
 
     }
 
@@ -248,13 +300,13 @@
 
 
 
-
+/*
     // Reasonable defaults
     var PIXEL_STEP  = 10;
     var LINE_HEIGHT = 40;
     var PAGE_HEIGHT = 800;
 
-    function normalizeWheel(/*object*/ event) /*object*/ {
+    function normalizeWheel(event) {
         var sX = 0, sY = 0,       // spinX, spinY
             pX = 0, pY = 0;       // pixelX, pixelY
 
@@ -295,9 +347,9 @@
             pixelX : pX,
             pixelY : pY };
     }
+*/
 
-
-
+    var minDeltaY;
 
     function mouseWheelHandler(e) {
 
@@ -309,18 +361,27 @@
 
         e.preventDefault();
 
+
+
+        if (e.deltaY != 0) {
+            // normalize Y delta
+            if (minDeltaY > Math.abs(e.deltaY) || !minDeltaY) {
+                minDeltaY = Math.abs(e.deltaY);
+            }
+//            c = c + e.deltaY / minDeltaY;
+        }
+
         console.log('mouse wheel', e.wheelDelta, e.wheelDeltaX, e.wheelDeltaY, e.detail);
 
-        let n = normalizeWheel(e);
-        console.log(n);
+//        let n = normalizeWheel(e);
+//        console.log(n);
 
-        var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
-//        myimage.style.width = Math.max(50, Math.min(800, myimage.width + (30 * delta))) + "px";
-//        console.log('mouse wheel', delta, e.target, e.currentTarget);
+//        var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
 
         currentTarget = e.currentTarget;
 
-        currentAngle += delta * 10;
+        setAngle(currentAngle + e.deltaY / minDeltaY);
+
 
         let p = getPath(currentAngle * Math.PI / 180.0);
 
