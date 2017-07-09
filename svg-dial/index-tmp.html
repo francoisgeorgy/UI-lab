@@ -51,8 +51,6 @@
 </body>
 <script>
 
-    // All computations are done in standard cartesian or polar coordinates.
-    // The convertion to the dial coordinates are done at the very end.
 
     function infos(dx, dy, angle, angleDegree, distance) {
 //        $('#mousexy').text(`${x}, ${y}`);
@@ -80,13 +78,9 @@
 
     var arcStart = 30;
     var arcEnd = 330;
-    var currentAngle = 0; // pour mousewheel; in dial coordinates
+    var currentAngle = 0; // pour mousewheel
 
-    /**
-     * Angle in degrees, with 0 at 15:00
-     */
     function setAngle(angle) {
-        console.log(`setAngle ${angle}`);
         currentAngle = angle;
         // apply limits
         if (currentAngle > 360) currentAngle = 360.0;
@@ -103,97 +97,17 @@
     function normalizeAngle(angle) {
         let a = ZERO_AT - angle;
         if (a < 0) a = a + 360.0;
-        console.log(`normalizeAngle ${angle} -> ${a}`);
         return a;
     }
 
-    function getDialAngle() {
-        let da = ZERO_AT - getAngle();
-        return da >= 0.0 ? da : (da + 360.0);
-    }
-
     /**
-     * x is 0..1
+     * angle is in degrees
      */
-    function getXDial(x) {
-        return HALF_WIDTH + (RADIUS * x);
-    }
-
-    /**
-     * y is 0..1
-     */
-    function getYDial(y) {
-        return HALF_HEIGHT - (RADIUS * y);
-    }
-
-
-    function init(startAngle) {
-
-        let angle = normalizeAngle(startAngle);
-
-        console.log(`initCoordinates ${startAngle} -> ${angle} (${angle * Math.PI / 180.0})`);
-
-//        let startAngle = 180.0;
-//        let startAngle = normalizeAngle(arcStart);
-        // TODO: calculer coordonnées de départ une seule fois lors de l'initialisation
-
-        startX = getXDial(Math.cos(angle * Math.PI / 180.0));
-        startY = getYDial(Math.sin(angle * Math.PI / 180.0));
-
-//        startX = HALF_WIDTH + (RADIUS * x);
-////        startY = (2 * HALF_HEIGHT) - (HALF_HEIGHT + (RADIUS * y));
-//        startY = HALF_HEIGHT - (RADIUS * y);
-
-
-        console.log(`initCoordinates ${startX}, ${startY}`);
-
-    }
-
-    function getMouseCoordinates(e) {
-
-        console.log(`mouse d = ${e.offsetX}, ${e.offsetY}`);
-
-
-        // mouse delta in cartesian coordinate with path center=0,0 and scaled (0..1) relative to path:
-//        let dx = (e.offsetX- pathCenterX) / (pathRect.width / 2);
-//        let dy = - (e.offsetY - pathCenterY) / (pathRect.height / 2);
-
-        let dx = (e.offsetX- pathCenterX) / (targetRect.width / 2);
-        let dy = - (e.offsetY - pathCenterY) / (targetRect.width / 2);  // targetRect.width car on a 20px de plus en hauteur pour le label
-
-        console.log(`cartesian coord = ${dx}, ${dy}`);
-
-        // convert to polar coordinates
-        let angle = Math.atan2(dy, dx);
-
-        if (angle < 0) angle = 2*Math.PI + angle;
-//        if (dy < 0) angle = Math.PI*2.0 + angle;
-
-        console.log(`polar angle = ${angle}`);
-
-//        let a_deg_dial = ((angle * 180.0 / Math.PI) + ZERO_AT) % 360;
-//        setAngle(a_deg_dial);  // rads to degs
-        setAngle(angle * 180.0 / Math.PI);
-
-        // il faut corriger avec *(HALF_WIDTH/RADIUS) car le container est plus grand que le rayon
-        let distance = Math.sqrt(dx*(HALF_WIDTH/RADIUS)*dx*(HALF_WIDTH/RADIUS) + dy*(HALF_HEIGHT/RADIUS)*dy*(HALF_HEIGHT/RADIUS));
-
-        //TODO: remove unused dx and dy
-        return [dx, dy, angle, getAngle(), distance];
-
-    }
-
-    /**
-     * angle is in degrees in dial coordinates
-     */
-    function getPath(arcAngle) {
+    function getPath(angle) {
 
         //TODO: apply limits or let it circle?
 
-//        let angle = normalizeAngle(arcAngle);
-        let angle = arcAngle;
-
-        console.log(`getPath ${arcAngle} -> ${angle}`);
+        console.log(`getPath ${angle}`);
 
         // compute in standard cartesian coordinates:
 
@@ -211,42 +125,73 @@
         let startX = HALF_WIDTH + (RADIUS * x);
         let startY = HALF_HEIGHT + (RADIUS * y);
 
-
-
 //        console.log(`path start ${x}, ${y}, ${startX}, ${startY}`);
 */
 //        let endX = HALF_WIDTH + (RADIUS * Math.cos(angle * Math.PI / 180.0));
 //        let endY = HALF_HEIGHT + (RADIUS * Math.sin(angle * Math.PI / 180.0));
-        let a_rad = angle * Math.PI / 180.0;
+        let endX = HALF_WIDTH + (RADIUS * Math.cos(angle));
+        let endY = HALF_HEIGHT + (RADIUS * Math.sin(angle));
 
-        let endX = HALF_WIDTH + (RADIUS * Math.cos(a_rad));
-        let endY = HALF_HEIGHT + (RADIUS * Math.sin(a_rad));
-
-        let da = getDialAngle();
-
-        console.log(`path ${endX}, ${endY}, ${angle} -> ${a_rad}, ${da}`);
+//        console.log(`path ${endX}, ${endY}`);
 
         // convert to SVG coordinates:
         endY = (2*HALF_WIDTH) - endY;
 
 //        console.log(`path ${endX}, ${endY}`);
 
-        let deltaAngle = normalizeAngle(30) - arcAngle;
-        if (deltaAngle < 0) deltaAngle += 360;
-
-        console.log(`path deltaAngle ${deltaAngle}`);
-
-//        let largeArc = a_rad < Math.PI ? 1 : 0;
-        let largeArc = deltaAngle  < 180 ? 0 : 1;
+        let largeArc = angle > Math.PI ? 1 : 0;
 
         // path.setAttributeNS(null, "d", "M 10,50 A 40,40 0 1,1 50,90 L 50,70");
         let p = `M ${startX},${startY} A ${RADIUS},${RADIUS} 0 ${largeArc},1 ${endX},${endY}`;
 
-//        p += ` M ${startX},${startY} A ${RADIUS},${RADIUS} 0 ${1-largeArc},1 ${endX},${endY}`;
-
-        console.log(p);
-
         return p;
+    }
+
+    function getCoordinates(e) {
+
+        console.log(`mouse d = ${e.offsetX}, ${e.offsetY}`);
+
+
+        // mouse delta in cartesian coordinate with path center=0,0 and scaled (0..1) relative to path:
+//        let dx = (e.offsetX- pathCenterX) / (pathRect.width / 2);
+//        let dy = - (e.offsetY - pathCenterY) / (pathRect.height / 2);
+
+        let dx = (e.offsetX- pathCenterX) / (targetRect.width / 2);
+        let dy = - (e.offsetY - pathCenterY) / (targetRect.width / 2);  // targetRect.width car on a 20px de plus en hauteur pour le label
+
+//        console.log(`cartesian coord = ${dx}, ${dy}`);
+
+        // convert to polar coordinates
+        let angle = Math.atan2(dy, dx);
+
+        if (angle < 0) angle = 2*Math.PI + angle;
+//        if (dy < 0) angle = Math.PI*2.0 + angle;
+
+        setAngle(angle * 180.0 / Math.PI);  // rads to degs
+
+        // il faut corriger avec *(HALF_WIDTH/RADIUS) car le container est plus grand que le rayon
+        let distance = Math.sqrt(dx*(HALF_WIDTH/RADIUS)*dx*(HALF_WIDTH/RADIUS) + dy*(HALF_HEIGHT/RADIUS)*dy*(HALF_HEIGHT/RADIUS));
+
+        return [dx, dy, angle, getAngle(), distance];
+
+    }
+
+
+    function initCoordinates() {
+
+        let startAngle = 180.0;
+//        let startAngle = normalizeAngle(arcStart);
+        // TODO: calculer coordonnées de départ une seule fois lors de l'initialisation
+
+        let x = Math.cos(startAngle * Math.PI / 180.0);
+        let y = Math.sin(startAngle * Math.PI / 180.0);
+
+        startX = HALF_WIDTH + (RADIUS * x);
+        startY = HALF_HEIGHT + (RADIUS * y);
+
+//        console.log(`path start ${x}, ${y}, ${startX}, ${startY}`);
+
+
     }
 
     function startDrag(e) {
@@ -287,7 +232,10 @@
 
         console.log(`path center = ${pathCenterX}, ${pathCenterY}`);
 
-        let c = getMouseCoordinates(e);
+
+
+
+        let c = getCoordinates(e);
 
 //        console.log(c);
 
@@ -295,12 +243,10 @@
         document.addEventListener('mouseup', this.endDrag, false);
 
 //        console.log(currentTarget.childNodes[1]);
-//        let a = (c[3] + ZERO_AT) % 360;
-//        let dialAngle = ZERO_AT - getAngle();
-        currentTarget.childNodes[0].textContent = getDialAngle().toFixed(0);
+        let a = c[3];
+        currentTarget.childNodes[0].textContent = a.toFixed(0);
 
-        //p = getPath((c[3] + ZERO_AT) % 360);
-        let p = getPath(getAngle());
+        p = getPath(c[2]);
 
         currentTarget.childNodes[2].setAttributeNS(null, "d", p);
 
@@ -314,13 +260,26 @@
 
         console.log("handleDrag");
 
+//        const xPosition = e.clientX;
+//        const tempY = e.clientY;
 
-        let c = getMouseCoordinates(e);
+//     const cursorPos = [e.clientX, e.clientY];
+//     const normalizedValue = (100 - ((tempY - topPosition) * (100 / (BASE_HEIGHT * scale)))) / 100;
 
-//        let a = c[3];
-        currentTarget.childNodes[0].textContent = getDialAngle().toFixed(0);
+//     const {min, max, step} = this.props;
+//     const unnormalizedValue = snap((normalizedValue * (max - min)), step, min);
 
-        let p = getPath(getAngle());
+//     this.setState({topPosition, scale, cursorPos});
+//     if (unnormalizedValue !== this.props.value) {
+//         this.props.onChange(unnormalizedValue);
+//     }
+
+        let c = getCoordinates(e);
+
+        let a = c[3];
+        currentTarget.childNodes[0].textContent = a.toFixed(0);
+
+        let p = getPath(c[2]);
 
         currentTarget.childNodes[2].setAttributeNS(null, "d", p);
 
@@ -335,6 +294,56 @@
     }
 
 
+
+
+/*
+    // Reasonable defaults
+    var PIXEL_STEP  = 10;
+    var LINE_HEIGHT = 40;
+    var PAGE_HEIGHT = 800;
+
+    function normalizeWheel(event) {
+        var sX = 0, sY = 0,       // spinX, spinY
+            pX = 0, pY = 0;       // pixelX, pixelY
+
+        // Legacy
+        if ('detail'      in event) { sY = event.detail; }
+        if ('wheelDelta'  in event) { sY = -event.wheelDelta / 120; }
+        if ('wheelDeltaY' in event) { sY = -event.wheelDeltaY / 120; }
+        if ('wheelDeltaX' in event) { sX = -event.wheelDeltaX / 120; }
+
+        // side scrolling on FF with DOMMouseScroll
+        if ( 'axis' in event && event.axis === event.HORIZONTAL_AXIS ) {
+            sX = sY;
+            sY = 0;
+        }
+
+        pX = sX * PIXEL_STEP;
+        pY = sY * PIXEL_STEP;
+
+        if ('deltaY' in event) { pY = event.deltaY; }
+        if ('deltaX' in event) { pX = event.deltaX; }
+
+        if ((pX || pY) && event.deltaMode) {
+            if (event.deltaMode == 1) {          // delta in LINE units
+                pX *= LINE_HEIGHT;
+                pY *= LINE_HEIGHT;
+            } else {                             // delta in PAGE units
+                pX *= PAGE_HEIGHT;
+                pY *= PAGE_HEIGHT;
+            }
+        }
+
+        // Fall-back if spin cannot be determined
+        if (pX && !sX) { sX = (pX < 1) ? -1 : 1; }
+        if (pY && !sY) { sY = (pY < 1) ? -1 : 1; }
+
+        return { spinX  : sX,
+            spinY  : sY,
+            pixelX : pX,
+            pixelY : pY };
+    }
+*/
 
     var minDeltaY;
 
@@ -355,25 +364,27 @@
             if (minDeltaY > Math.abs(e.deltaY) || !minDeltaY) {
                 minDeltaY = Math.abs(e.deltaY);
             }
+//            c = c + e.deltaY / minDeltaY;
         }
 
         console.log('mouse wheel', e.wheelDelta, e.wheelDeltaX, e.wheelDeltaY, e.detail);
 
+//        let n = normalizeWheel(e);
+//        console.log(n);
+
+//        var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+
         currentTarget = e.currentTarget;
 
-        let newAngle = currentAngle + e.deltaY / minDeltaY;
-        if (newAngle < 0) newAngle = 0;
-
-        setAngle(newAngle);
+        setAngle(currentAngle + e.deltaY / minDeltaY);
 
 
-//        let p = getPath(currentAngle * Math.PI / 180.0);
-        let p = getPath(getAngle());
+        let p = getPath(currentAngle * Math.PI / 180.0);
 
         // TODO: timing --> speed
         // https://stackoverflow.com/questions/22593286/detect-measure-scroll-speed
 
-        currentTarget.childNodes[0].textContent = getDialAngle().toFixed(0);
+        currentTarget.childNodes[0].textContent = currentAngle.toFixed(0);
 
         currentTarget.childNodes[2].setAttributeNS(null, "d", p);
 
@@ -416,8 +427,9 @@
         // ==> first element -> "painted" first
 
 
-        init(arcStart);
-        setAngle(arcStart);
+        initCoordinates();
+
+        setAngle(arcStart);  // rads to degs
         let p = getPath(arcEnd);
 
         let path = document.createElementNS(NS, "path");
@@ -425,29 +437,10 @@
         path.setAttributeNS(null, "d", p);
         path.setAttribute("class", "arc");
 
-
         svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
         svg.setAttributeNS(null, "viewBox", "0 0 100 120");
         svg.setAttribute("class", "dial");
         svg.appendChild(path);
-
-
-        let xAxis = document.createElementNS(NS, "line");
-        xAxis.setAttributeNS(null, "x1", "0");
-        xAxis.setAttributeNS(null, "y1", "50");
-        xAxis.setAttributeNS(null, "x2", "100");
-        xAxis.setAttributeNS(null, "y2", "50");
-        xAxis.setAttributeNS(null, "stroke", "blue");
-        svg.append(xAxis);
-
-        let yAxis = document.createElementNS(NS, "line");
-        yAxis.setAttributeNS(null, "x1", "50");
-        yAxis.setAttributeNS(null, "y1", "0");
-        yAxis.setAttributeNS(null, "x2", "50");
-        yAxis.setAttributeNS(null, "y2", "100");
-        yAxis.setAttributeNS(null, "stroke", "blue");
-        svg.append(yAxis);
-
 
         currentAngle = -90;
 
