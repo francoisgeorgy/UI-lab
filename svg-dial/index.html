@@ -42,145 +42,154 @@
     <div>
         <svg class="dial"></svg>
     </div>
+<!--
     <div>
-        <!--abs x, y: <span id="mousexy"></span><br />-->
+        &lt;!&ndash;abs x, y: <span id="mousexy"></span><br />&ndash;&gt;
         dx, dy: <span id="offsetxy"></span><br />
         angle: <span id="angle"></span><br />
         distance: <span id="distance"></span><br />
     </div>
+-->
 </body>
 <script>
 
     // All computations are done in standard cartesian or polar coordinates.
     // The convertion to the dial coordinates are done at the very end.
+    // /!\ All angles are in degrees unless noted.
 
+/*
     function infos(dx, dy, angle, angleDegree, distance) {
 //        $('#mousexy').text(`${x}, ${y}`);
         $('#offsetxy').text(`${dx.toFixed(2)}, ${dy.toFixed(2)}`);
         $('#angle').text(`${angleDegree.toFixed(2)}`);
         $('#distance').text(`${distance.toFixed(2)}`);
     }
+*/
 
+    // NOTE: viewBox must be 100x120: 100x100 for the arc and 100x20 below for the label.
+
+    const HALF_WIDTH = 50;      // viewBox/2
+    const HALF_HEIGHT = 50;     // viewBox/2
+    const RADIUS = 40;          // a bit less than viewBox/2 to have a margin outside the arc. Must also takes into account the width of the arc stroke.
+
+    // mouse drag support
     var currentTarget;
     var targetRect;
 //    var knobCenter;
 //    var offx, offy;
 
-    var pathCenterX = 0;
-    var pathCenterY = 0;
+    // Center of arc in dial coordinates and in ViewPort's pixels relative to the <svg> ClientBoundingRect.
+    var arcCenterXPixels = 0;
+    var arcCenterYPixels = 0; // equal to arcCenterXPixels because the dial is a circle
 
-    var startX;
-    var startY;
+    // start of arc, in ViewBox coordinates, computed once during the init
+    var arcStartX;     // dial coordinates
+    var arcStartY;     // dial coordinates
 
-    const RADIUS = 40;
-    const HALF_WIDTH = 50;
-    const HALF_HEIGHT = 50;
+    const ZERO_AT = 270.0;  // the 0 degree will be at 270 polar degrees (6 o'clock).
 
-    const ZERO_AT = 270.0;    // the 0 degree will be at 270 degrees.
-
-    var arcStart = 30;
-    var arcEnd = 330;
-    var currentAngle = 0; // pour mousewheel; in dial coordinates
-
-    /**
-     * Angle in degrees, with 0 at 15:00
-     */
-    function setAngle(angle) {
-        console.log(`setAngle ${angle}`);
-        currentAngle = angle;
-        // apply limits
-        if (currentAngle > 360) currentAngle = 360.0;
-        if (currentAngle < 0) currentAngle = 0.0;
-    }
-
-    function getAngle(angle) {
-        return currentAngle;
-    }
+    var arcStart = 30.0;    // Angle in dial coordinates (0 at 6 0'clock)
+    var arcEnd = 330.0;     // Angle in dial coordinates (0 at 6 0'clock)
+    var polarAngle = 0.0;   // Angle in polar coordinates (0 at 3 o'clock)
+    var distance = 0.0;     // distance, in polar coordinates, from center of arc to last mouse position
 
     /**
-     * Return polar coordinates angle from our "dial coordinates" angle.
+     * Angle in degrees in polar coordinates (0 degrees at 3 o'clock)
      */
-    function normalizeAngle(angle) {
+    function setPolarAngle(angle) {
+//        console.log(`setPolarAngle ${angle}`);
+//        currentAngle = angle;
+//        // apply limits
+//        if (currentAngle > arcEnd) currentAngle = arcEnd;
+//        if (currentAngle < arcStart) currentAngle = arcStart;
+        polarAngle = angle;
+        let a0 = dialToPolarAngle(arcStart);
+        let a1 = dialToPolarAngle(arcEnd);
+        if (polarAngle > a0) polarAngle = a0;
+        if (polarAngle > a1) polarAngle = a1;
+//        polarAngle = Math.max(Math.min(a1, angle), a0);
+
+        let a = polarToDialAngle(angle);
+        console.log(`setPolarAngle: ${angle} --> ${a}`);
+        if (a < arcStart) a = arcStart;
+        if (a > arcEnd) a = arcEnd;
+
+        polarAngle = dialToPolarAngle(a);
+
+        console.log(`setPolarAngle: ${angle} --> ${a}; ${a0} ${a1} --> ${polarAngle}`);
+    }
+
+    function incPolarAngle(increment) {
+        setPolarAngle(polarAngle + increment);
+    }
+
+    /**
+     * Angle in degrees in polar coordinates (0 degrees at 3 o'clock)
+     */
+    function getPolarAngle() {
+        return polarAngle;
+    }
+
+    /**
+     * Return polar coordinates angle from our "dial coordinates" angle
+     */
+    function dialToPolarAngle(angle) {
         let a = ZERO_AT - angle;
         if (a < 0) a = a + 360.0;
-        console.log(`normalizeAngle ${angle} -> ${a}`);
+        console.log(`dialToPolarAngle ${angle} -> ${a}`);
         return a;
     }
 
-    function getDialAngle() {
-        let da = ZERO_AT - getAngle();
+    function polarToDialAngle(angle) {
+        let da = ZERO_AT - angle;
+        console.log(`polarToDialAngle: ${da}`);
         return da >= 0.0 ? da : (da + 360.0);
+    }
+
+    /**
+     * Return dial coordinates angle from the current polar coordinates angle
+     */
+    function getDialAngle() {
+//        let da = ZERO_AT - getPolarAngle();
+//        console.log(`getDialAngle: ${da}`);
+//        return da >= 0.0 ? da : (da + 360.0);
+        return polarToDialAngle(getPolarAngle());
     }
 
     /**
      * x is 0..1
      */
-    function getXDial(x) {
+    function getArcX(x) {
         return HALF_WIDTH + (RADIUS * x);
     }
 
     /**
      * y is 0..1
      */
-    function getYDial(y) {
+    function getArcY(y) {
+        // (2 * HALF_HEIGHT) - (HALF_HEIGHT + (RADIUS * y));
         return HALF_HEIGHT - (RADIUS * y);
     }
 
-
+    /**
+     * startAngle in dial coordinates
+     */
     function init(startAngle) {
 
-        let angle = normalizeAngle(startAngle);
+        setPolarAngle(dialToPolarAngle(startAngle));   // init polarAngle
 
-        console.log(`initCoordinates ${startAngle} -> ${angle} (${angle * Math.PI / 180.0})`);
+//        console.log(`init: dialAngle=${startAngle} -> polarAngle=${angle} (${angle * Math.PI / 180.0})`);
 
 //        let startAngle = 180.0;
 //        let startAngle = normalizeAngle(arcStart);
         // TODO: calculer coordonnées de départ une seule fois lors de l'initialisation
 
-        startX = getXDial(Math.cos(angle * Math.PI / 180.0));
-        startY = getYDial(Math.sin(angle * Math.PI / 180.0));
+        let angle_rad = getPolarAngle() * Math.PI / 180.0;
 
-//        startX = HALF_WIDTH + (RADIUS * x);
-////        startY = (2 * HALF_HEIGHT) - (HALF_HEIGHT + (RADIUS * y));
-//        startY = HALF_HEIGHT - (RADIUS * y);
+        arcStartX = getArcX(Math.cos(angle_rad));   // viewBox coordinates (independant from borwser resizing)
+        arcStartY = getArcY(Math.sin(angle_rad));   // viewBox coordinates (independant from borwser resizing)
 
-
-        console.log(`initCoordinates ${startX}, ${startY}`);
-
-    }
-
-    function getMouseCoordinates(e) {
-
-        console.log(`mouse d = ${e.offsetX}, ${e.offsetY}`);
-
-
-        // mouse delta in cartesian coordinate with path center=0,0 and scaled (0..1) relative to path:
-//        let dx = (e.offsetX- pathCenterX) / (pathRect.width / 2);
-//        let dy = - (e.offsetY - pathCenterY) / (pathRect.height / 2);
-
-        let dx = (e.offsetX- pathCenterX) / (targetRect.width / 2);
-        let dy = - (e.offsetY - pathCenterY) / (targetRect.width / 2);  // targetRect.width car on a 20px de plus en hauteur pour le label
-
-        console.log(`cartesian coord = ${dx}, ${dy}`);
-
-        // convert to polar coordinates
-        let angle = Math.atan2(dy, dx);
-
-        if (angle < 0) angle = 2*Math.PI + angle;
-//        if (dy < 0) angle = Math.PI*2.0 + angle;
-
-        console.log(`polar angle = ${angle}`);
-
-//        let a_deg_dial = ((angle * 180.0 / Math.PI) + ZERO_AT) % 360;
-//        setAngle(a_deg_dial);  // rads to degs
-        setAngle(angle * 180.0 / Math.PI);
-
-        // il faut corriger avec *(HALF_WIDTH/RADIUS) car le container est plus grand que le rayon
-        let distance = Math.sqrt(dx*(HALF_WIDTH/RADIUS)*dx*(HALF_WIDTH/RADIUS) + dy*(HALF_HEIGHT/RADIUS)*dy*(HALF_HEIGHT/RADIUS));
-
-        //TODO: remove unused dx and dy
-        return [dx, dy, angle, getAngle(), distance];
-
+//        console.log(`init: ${arcStartX}, ${arcStartY}, ${getPolarAngle()}`);
     }
 
     /**
@@ -200,21 +209,21 @@
         // -1,0 --> 10,50
         //          50 + (x * 40) = 50 + (-40) = 10
         //          50 + (y * 40) = 50 + (0) = 50
-/*
-        let startAngle = 180.0;
-//        let startAngle = normalizeAngle(arcStart);
-        // TODO: calculer coordonnées de départ une seule fois lors de l'initialisation
+        /*
+         let startAngle = 180.0;
+         //        let startAngle = normalizeAngle(arcStart);
+         // TODO: calculer coordonnées de départ une seule fois lors de l'initialisation
 
-        let x = Math.cos(startAngle * Math.PI / 180.0);
-        let y = Math.sin(startAngle * Math.PI / 180.0);
+         let x = Math.cos(startAngle * Math.PI / 180.0);
+         let y = Math.sin(startAngle * Math.PI / 180.0);
 
-        let startX = HALF_WIDTH + (RADIUS * x);
-        let startY = HALF_HEIGHT + (RADIUS * y);
+         let startX = HALF_WIDTH + (RADIUS * x);
+         let startY = HALF_HEIGHT + (RADIUS * y);
 
 
 
-//        console.log(`path start ${x}, ${y}, ${startX}, ${startY}`);
-*/
+         //        console.log(`path start ${x}, ${y}, ${startX}, ${startY}`);
+         */
 //        let endX = HALF_WIDTH + (RADIUS * Math.cos(angle * Math.PI / 180.0));
 //        let endY = HALF_HEIGHT + (RADIUS * Math.sin(angle * Math.PI / 180.0));
         let a_rad = angle * Math.PI / 180.0;
@@ -231,7 +240,7 @@
 
 //        console.log(`path ${endX}, ${endY}`);
 
-        let deltaAngle = normalizeAngle(30) - arcAngle;
+        let deltaAngle = dialToPolarAngle(30) - arcAngle;
         if (deltaAngle < 0) deltaAngle += 360;
 
         console.log(`path deltaAngle ${deltaAngle}`);
@@ -240,7 +249,7 @@
         let largeArc = deltaAngle  < 180 ? 0 : 1;
 
         // path.setAttributeNS(null, "d", "M 10,50 A 40,40 0 1,1 50,90 L 50,70");
-        let p = `M ${startX},${startY} A ${RADIUS},${RADIUS} 0 ${largeArc},1 ${endX},${endY}`;
+        let p = `M ${arcStartX},${arcStartY} A ${RADIUS},${RADIUS} 0 ${largeArc},1 ${endX},${endY}`;
 
 //        p += ` M ${startX},${startY} A ${RADIUS},${RADIUS} 0 ${1-largeArc},1 ${endX},${endY}`;
 
@@ -249,82 +258,93 @@
         return p;
     }
 
+    function updateDial() {
+        currentTarget.childNodes[0].textContent = getDialAngle().toFixed(0);
+        currentTarget.childNodes[2].setAttributeNS(null, "d", getPath(getPolarAngle()));
+    }
+
+    /**
+     * startDrag() must have been called before to init the targetRect variable.
+     */
+    function mouseUpdate(e) {
+
+//        console.log(`mouse d = ${e.offsetX}, ${e.offsetY}`);
+
+        // (e.offsetX, e.offsetY) == (0, 0) at top-left corner of <svg> viewBox.
+
+        // mouse delta in cartesian coordinate with path center=0,0 and scaled (-1..0..1) relative to path:
+        // <svg> center:       (dx, dy) == ( 0,  0)
+        // <svg> top-left:     (dx, dy) == (-1,  1)
+        // <svg> bottom-right: (dx, dy) == ( 1, -1) (bottom right of the 100x100 viewBox, ignoring the bottom 100x20 for the label)
+        let dx = (e.offsetX - arcCenterXPixels) / (targetRect.width / 2);
+        let dy = - (e.offsetY - arcCenterYPixels) / (targetRect.width / 2);  // targetRect.width car on a 20px de plus en hauteur pour le label
+
+//        console.log(`mouse cartesian coord = ${dx}, ${dy}`);
+
+        // convert to polar coordinates
+        let angle_rad = Math.atan2(dy, dx);
+
+        if (angle_rad < 0) angle_rad = 2.0*Math.PI + angle_rad;
+
+        console.log(`mouseUpdate: angle_rad ${angle_rad}`);
+
+        setPolarAngle(angle_rad * 180.0 / Math.PI);     // rads to degs
+
+        // distance from arc center to mouse position
+        distance = Math.sqrt(dx*(HALF_WIDTH/RADIUS)*dx*(HALF_WIDTH/RADIUS) + dy*(HALF_HEIGHT/RADIUS)*dy*(HALF_HEIGHT/RADIUS));
+
+    }
+
     function startDrag(e) {
 
         e.preventDefault();
 
-        // e.currentTarget :
-        // Identifies the current target for the event, as the event traverses the DOM. It always REFERS TO THE ELEMENT
-        // TO WHICH THE EVENT HANDLER HAS BEEN ATTACHED, as opposed to event.target which identifies the element on
-        // which the event occurred.
-
-//        console.log("startDrag", e.target, e.currentTarget);
+        // API: Event.currentTarget
+        //      Identifies the current target for the event, as the event traverses the DOM. It always REFERS TO THE ELEMENT
+        //      TO WHICH THE EVENT HANDLER HAS BEEN ATTACHED, as opposed to event.target which identifies the element on
+        //      which the event occurred.
+        //      https://developer.mozilla.org/en-US/docs/Web/API/Event/currentTarget
 
         currentTarget = e.currentTarget;
 
-        console.log('currentTarget', currentTarget);
+        // get the boundingRect of the <svg> object. The coordinates are in viewport's pixels.
+        targetRect = currentTarget.getBoundingClientRect(); // currentTarget must be the <svg...> object
+//        console.log('startDrag targetRect', targetRect);
 
-//        initCoordinates(e);
+        // API: Element.getBoundingClientRect()
+        //      The Element.getBoundingClientRect() method returns the size of an element and its position RELATIVE TO THE VIEWPORT.
+        //      https://developer.mozilla.org/en/docs/Web/API/Element/getBoundingClientRect
 
+        // Note: we must take the boundingClientRect of the <svg> and not the <path> because the <path> bounding rect
+        //       is not constant because it encloses the current arc.
 
-        targetRect = currentTarget.getBoundingClientRect();
+        // by design, the arc center is at equal distance from top and left.
+        arcCenterXPixels = targetRect.width / 2;
+        //noinspection JSSuspiciousNameCombination
+        arcCenterYPixels = arcCenterXPixels;
 
-//        console.log('currentTarget', currentTarget);
-
-//        var pathElem = currentTarget.childNodes[2];  // we known that the path is the second child, since we created it ourselves.
-//        var pathRect = pathElem.getBoundingClientRect();    // The Element.getBoundingClientRect() method returns the
-        // size of an element and its position RELATIVE TO THE VIEWPORT.
-//        console.log('pathElem', pathElem);
-//        console.log('path rect', pathRect);
-
-        // center of path relative to svg bounding rect:
-//        let pathCenterX = pathRect.left - targetRect.left + pathRect.width / 2;
-//        let pathCenterY = pathRect.top - targetRect.top + pathRect.height / 2;
-        // path will change and we can not know in advance if the bouding rectangle is a square.
-        pathCenterX = targetRect.width / 2;
-        pathCenterY = pathCenterX;
-
-
-        console.log(`path center = ${pathCenterX}, ${pathCenterY}`);
-
-        let c = getMouseCoordinates(e);
-
-//        console.log(c);
+//        console.log(`startDrag arc center = ${arcCenterXPixels}, ${arcCenterYPixels}`);
 
         document.addEventListener('mousemove', this.handleDrag, false);
         document.addEventListener('mouseup', this.endDrag, false);
 
-//        console.log(currentTarget.childNodes[1]);
-//        let a = (c[3] + ZERO_AT) % 360;
-//        let dialAngle = ZERO_AT - getAngle();
-        currentTarget.childNodes[0].textContent = getDialAngle().toFixed(0);
+        mouseUpdate(e);
 
-        //p = getPath((c[3] + ZERO_AT) % 360);
-        let p = getPath(getAngle());
-
-        currentTarget.childNodes[2].setAttributeNS(null, "d", p);
-
-        //infos(e.clientX, e.clientY, dx.toFixed(2), dy.toFixed(2), angleDegrees.toFixed(2), distance.toFixed(2));
-        infos(...c);
-
+        updateDial();
     }
 
+    /**
+     *
+     * @param e
+     */
     function handleDrag(e) {
         e.preventDefault();
 
-        console.log("handleDrag");
+//        console.log("handleDrag");
 
+        mouseUpdate(e);
 
-        let c = getMouseCoordinates(e);
-
-//        let a = c[3];
-        currentTarget.childNodes[0].textContent = getDialAngle().toFixed(0);
-
-        let p = getPath(getAngle());
-
-        currentTarget.childNodes[2].setAttributeNS(null, "d", p);
-
-        infos(...c);
+        updateDial();
     }
 
     function endDrag() {
@@ -348,8 +368,6 @@
 
         e.preventDefault();
 
-
-
         if (e.deltaY != 0) {
             // normalize Y delta
             if (minDeltaY > Math.abs(e.deltaY) || !minDeltaY) {
@@ -359,23 +377,20 @@
 
         console.log('mouse wheel', e.wheelDelta, e.wheelDeltaX, e.wheelDeltaY, e.detail);
 
+        // important!
         currentTarget = e.currentTarget;
 
-        let newAngle = currentAngle + e.deltaY / minDeltaY;
-        if (newAngle < 0) newAngle = 0;
-
-        setAngle(newAngle);
-
+        incPolarAngle(e.deltaY / minDeltaY);
 
 //        let p = getPath(currentAngle * Math.PI / 180.0);
-        let p = getPath(getAngle());
+//        let p = getPath(getPolarAngle());
 
         // TODO: timing --> speed
         // https://stackoverflow.com/questions/22593286/detect-measure-scroll-speed
 
-        currentTarget.childNodes[0].textContent = getDialAngle().toFixed(0);
-
-        currentTarget.childNodes[2].setAttributeNS(null, "d", p);
+//        currentTarget.childNodes[0].textContent = getDialAngle().toFixed(0);
+//        currentTarget.childNodes[2].setAttributeNS(null, "d", p);
+        updateDial();
 
         return false;
     }
@@ -417,7 +432,7 @@
 
 
         init(arcStart);
-        setAngle(arcStart);
+        setPolarAngle(arcStart);
         let p = getPath(arcEnd);
 
         let path = document.createElementNS(NS, "path");
@@ -449,7 +464,7 @@
         svg.append(yAxis);
 
 
-        currentAngle = -90;
+        polarAngle = -90;
 
         $(svg).on("mousedown", function(e) {
             startDrag(e);
