@@ -93,31 +93,31 @@
 
     const ZERO_AT = 270.0;  // the 0 degree will be at 270 polar degrees (6 o'clock).
 
-    var arcStart = 30.0;    // Angle in dial coordinates (0 at 6 0'clock)
-    var arcEnd = 330.0;     // Angle in dial coordinates (0 at 6 0'clock)
-    var polarAngle = 0.0;   // Angle in polar coordinates (0 at 3 o'clock)
-    var distance = 0.0;     // distance, in polar coordinates, from center of arc to last mouse position
+    var arcStart = 30.0;        // Angle in dial coordinates (0 at 6 0'clock)
+    var arcEnd = 330.0;         // Angle in dial coordinates (0 at 6 0'clock)
+    var arcStartPolar = 0.0;    // initialized in init()
+    var arcEndPolar = 0.0;      // initialized in init()
+    var polarAngle = 0.0;       // Angle in polar coordinates (0 at 3 o'clock)
+    var distance = 0.0;         // distance, in polar coordinates, from center of arc to last mouse position
 
-    var arcStartPolar = 240.0;
-    var arcEndPolar = 300.0;
 
     /**
      * Angle in degrees in polar coordinates (0 degrees at 3 o'clock)
      */
     function setPolarAngle(angle) {
 
-        console.log(`setPolarAngle ${angle} limits: ${arcStartPolar} ${arcEndPolar}`);
-
+//        console.log(`setPolarAngle ${angle} limits: ${polarToDialAngle(arcStartPolar)} ${polarToDialAngle(arcEndPolar)}`);
+        let a = (angle + 360.0) % 360.0;    // we add 360 to handle negative values down to -360
+        console.log(`setPolarAngle ${a}`);
         // apply boundaries
-        let a = (angle + 360.0) % 360.0;
-        if ((a > arcStartPolar) && (a < arcEndPolar)) {
-            console.log(`ignore ${a}`);
+        let b = polarToDialAngle(a);
+//        console.log(`setPolarAngle ${b}`);
+        if ((b < arcStart) || (b > arcEnd)) {
+            console.log(`ignore ${b}`);
             return;
         }
 
-        polarAngle = angle % 360.0;
-
-        console.log(`setPolarAngle: ${angle} --> ${polarAngle}`);
+        polarAngle = a;
     }
 
     function incPolarAngle(increment) {
@@ -351,7 +351,7 @@
         // important!
         currentTarget = e.currentTarget;
 
-        incPolarAngle(e.deltaY / minDeltaY);
+        incPolarAngle(-(e.deltaY / minDeltaY));     // TODO: make mousewheel direction configurable
 
 //        let p = getPath(currentAngle * Math.PI / 180.0);
 //        let p = getPath(getPolarAngle());
@@ -380,7 +380,7 @@
 
     const NS = "http://www.w3.org/2000/svg";
 
-    function createDial(svg, value, label) {
+    function createDial(svg, dialAngle, label) {
 
 
         let back = document.createElementNS(NS, "circle");
@@ -394,7 +394,7 @@
         valueText.setAttributeNS(null, "x", "50");
         valueText.setAttributeNS(null, "y", "55");
         valueText.setAttribute("class", "value");
-        valueText.textContent = value;
+        valueText.textContent = dialAngle;
         svg.appendChild(valueText);
 
         let labelText = document.createElementNS(NS, "text");
@@ -411,8 +411,8 @@
 
 
         init(arcStart);
-        setPolarAngle(arcStart);
-        let p = getPath(value);     // TODO: value to arc
+        setPolarAngle(dialToPolarAngle(dialAngle));     // TODO: remove setPolarAngle()
+        let p = getPath(dialToPolarAngle(dialAngle));     // TODO: value to arc
 
         let path = document.createElementNS(NS, "path");
         //path.setAttributeNS(null, "d", "M 10,50 A 40,40 0 1,1 50,90 L 50,70");
