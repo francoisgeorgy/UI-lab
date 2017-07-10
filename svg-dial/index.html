@@ -12,7 +12,7 @@
         .dial {
             height: 50vh;   /* 20% of viewport height */
             /*height: 120px;*/
-            background-color: #aaa;
+            background-color: #ccc;
             display: block;
         }
         .dial text {
@@ -26,6 +26,11 @@
         }
         .arc {
             stroke: black;
+            stroke-width: 4px;
+            fill: transparent;
+        }
+        .back {
+            stroke: #aaa;
             stroke-width: 4px;
             fill: transparent;
         }
@@ -104,7 +109,7 @@
         console.log(`setPolarAngle ${angle} limits: ${arcStartPolar} ${arcEndPolar}`);
 
         // apply boundaries
-        let a = angle % 360.0;
+        let a = (angle + 360.0) % 360.0;
         if ((a > arcStartPolar) && (a < arcEndPolar)) {
             console.log(`ignore ${a}`);
             return;
@@ -116,6 +121,7 @@
     }
 
     function incPolarAngle(increment) {
+        console.log(`incPolarAngle ${increment}`);
         setPolarAngle(polarAngle + increment);
     }
 
@@ -222,8 +228,10 @@
     }
 
     function updateDial() {
-        currentTarget.childNodes[0].textContent = getDialAngle().toFixed(0);
-        currentTarget.childNodes[2].setAttributeNS(null, "d", getPath(getPolarAngle()));
+        //TODO: setLabel()
+        //TODO: setValue()
+        currentTarget.childNodes[1].textContent = getDialAngle().toFixed(0);
+        currentTarget.childNodes[3].setAttributeNS(null, "d", getPath(getPolarAngle()));
     }
 
     /**
@@ -374,6 +382,14 @@
 
     function createDial(svg, value, label) {
 
+
+        let back = document.createElementNS(NS, "circle");
+        back.setAttributeNS(null, "cx", "50");
+        back.setAttributeNS(null, "cy", "50");
+        back.setAttributeNS(null, "r", "40");
+        back.setAttribute("class", "back");
+        svg.append(back);
+
         let valueText = document.createElementNS(NS, "text");
         valueText.setAttributeNS(null, "x", "50");
         valueText.setAttributeNS(null, "y", "55");
@@ -427,7 +443,9 @@
         svg.append(yAxis);
 
 
-        polarAngle = -90;
+
+
+        //polarAngle = -90;
 
         $(svg).on("mousedown", function(e) {
             startDrag(e);
