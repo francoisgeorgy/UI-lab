@@ -116,8 +116,9 @@
     var rotation = CW;
     var valueMin = 0.0;
     var valueMax = 100.0;
-    var valueResolution = 0.1;      // null means ignore
-    var valueStep = null;           // null means ignore
+    var valueResolution = 5;      // null means ignore
+    var snapToSteps = false;        // TODO
+    var valueFormating = null;      // function
 
 
     // NOTE: viewBox must be 100x120: 100x100 for the arc and 100x20 below for the label.
@@ -162,7 +163,7 @@
         if (valueResolution === null) {
             return v;
         }
-        return v;
+        return Math.round(v / valueResolution) * valueResolution;
     }
 
 //    function setValue(v) {
