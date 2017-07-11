@@ -58,6 +58,29 @@
 </body>
 <script>
 
+    function getOS() {
+        var userAgent = window.navigator.userAgent,
+            platform = window.navigator.platform,
+            macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'],
+            windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'],
+            iosPlatforms = ['iPhone', 'iPad', 'iPod'],
+            os = null;
+
+        if (macosPlatforms.indexOf(platform) !== -1) {
+            os = 'Mac OS';
+        } else if (iosPlatforms.indexOf(platform) !== -1) {
+            os = 'iOS';
+        } else if (windowsPlatforms.indexOf(platform) !== -1) {
+            os = 'Windows';
+        } else if (/Android/.test(userAgent)) {
+            os = 'Android';
+        } else if (!os && /Linux/.test(platform)) {
+            os = 'Linux';
+        }
+
+        return os;
+    }
+
     // All computations are done in standard cartesian or polar coordinates.
     // The convertion to the dial coordinates are done at the very end.
     // /!\ All angles are in degrees unless noted.
@@ -100,6 +123,7 @@
     var polarAngle = 0.0;       // Angle in polar coordinates (0 at 3 o'clock)
     var distance = 0.0;         // distance, in polar coordinates, from center of arc to last mouse position
 
+    var mouseWheelDirection = 1;
 
     /**
      * Angle in degrees in polar coordinates (0 degrees at 3 o'clock)
@@ -202,6 +226,9 @@
         arcStartY = getArcY(Math.sin(angle_rad));   // viewBox coordinates (independant from borwser resizing)
 
         console.log(`init: ${arcStartX}, ${arcStartY}, ${getPolarAngle()}`);
+
+        mouseWheelDirection = getOS() === 'Mac OS' ? -1 : 1;
+
     }
 
     /**
@@ -351,7 +378,7 @@
         // important!
         currentTarget = e.currentTarget;
 
-        incPolarAngle(-(e.deltaY / minDeltaY));     // TODO: make mousewheel direction configurable
+        incPolarAngle(mouseWheelDirection * (e.deltaY / minDeltaY));     // TODO: make mousewheel direction configurable
 
 //        let p = getPath(currentAngle * Math.PI / 180.0);
 //        let p = getPath(getPolarAngle());
