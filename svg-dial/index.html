@@ -34,6 +34,10 @@
             stroke-width: 4px;
             fill: transparent;
         }
+        .marker {
+            stroke: #aaa;
+            stroke-width: 1px;
+        }
     </style>
 </head>
 <body>
@@ -99,6 +103,9 @@
     }
 */
 
+    const CW = true;    // clock-wise
+    const CCW = !CW;    // counter clock-wise
+
     // user configurable
     const ZERO_AT = 270.0;      // the 0 degree will be at 270 polar degrees (6 o'clock).
     var arcMin = 30.0;          // Angle in dial coordinates (0 at 6 0'clock)
@@ -106,6 +113,7 @@
     var cursorStart = 20;            // 20% of radius
     var cursorEnd = 30;            // 20% of radius
     var cursorOnly = false; //TODO
+    var rotation = CW;
 
     // NOTE: viewBox must be 100x120: 100x100 for the arc and 100x20 below for the label.
 
@@ -182,7 +190,11 @@
      * Return viewBox X coordinates from cartesian -1..1 X
      */
     function getViewboxX(x) {
-        return HALF_WIDTH + x;
+
+        // CW:  x = 20 --> 50 + 20 = 70
+        // CCW: x = 20 --> 50 - 20 = 30
+
+        return rotation === CW ? (HALF_WIDTH + x) : (HALF_WIDTH - x);
     }
 
     /**
@@ -238,20 +250,27 @@
      */
     function getPath(endAngle) {
 
-        console.log(`getPath ${endAngle}`);
+        // SVG d: "A rx,ry xAxisRotate LargeArcFlag,SweepFlag x,y".
+        // SweepFlag is either 0 or 1, and determines if the arc should be swept in a clockwise (1), or anti-clockwise (0) direction
+
+        console.log(`getPath from ${minAngle} to ${endAngle}`);     // 240 330; 240-330=-90 + 360=270
 
         let a_rad = endAngle * Math.PI / 180.0;
         let endX = getViewboxX(Math.cos(a_rad) * RADIUS);
         let endY = getViewboxY(Math.sin(a_rad) * RADIUS);
 
-        let deltaAngle = (minAngle - endAngle + 360.0) % 360.0;     // in CLOCKWISE direction, min is greater than end
+        let deltaAngle = (minAngle - endAngle + 360.0) % 360.0;
         let largeArc = deltaAngle < 180.0 ? 0 : 1;
+
+//        console.log(`deltaAngle ${deltaAngle} largeArc ${largeArc}`);
+
+        let arcDirection = rotation === CW ? 1 : 0;
 
         if (cursorOnly) {
             // TODO
         }
 
-        let path = path_start + ` 0 ${largeArc},1 ${endX},${endY}`;
+        let path = path_start + ` 0 ${largeArc},${arcDirection} ${endX},${endY}`;
 
         if (cursorEnd > 0) {
             let cursorLength = RADIUS * ((100.0 - cursorEnd) / 100.0);  // cursor is in percents
@@ -288,7 +307,9 @@
         let dx = (e.offsetX - arcCenterXPixels) / (targetRect.width / 2);
         let dy = - (e.offsetY - arcCenterYPixels) / (targetRect.width / 2);  // targetRect.width car on a 20px de plus en hauteur pour le label
 
-//        console.log(`mouse cartesian coord = ${dx}, ${dy}`);
+        if (rotation === CCW) dx = - dx;
+
+        console.log(`mouse cartesian coord = ${dx}, ${dy}`);
 
         // convert to polar coordinates
         let angle_rad = Math.atan2(dy, dx);
@@ -463,7 +484,7 @@
         svg.setAttribute("class", "dial");
         svg.appendChild(path);
 
-
+    /*
         let xAxis = document.createElementNS(NS, "line");
         xAxis.setAttributeNS(null, "x1", "0");
         xAxis.setAttributeNS(null, "y1", "50");
@@ -479,8 +500,38 @@
         yAxis.setAttributeNS(null, "y2", "100");
         yAxis.setAttributeNS(null, "stroke", "blue");
         svg.append(yAxis);
+    */
+        let m = document.createElementNS(NS, "line");
+        m.setAttributeNS(null, "x1", "80");
+        m.setAttributeNS(null, "y1", "50");
+        m.setAttributeNS(null, "x2", "90");
+        m.setAttributeNS(null, "y2", "50");
+        m.setAttribute("class", "marker");
+        svg.append(m);
 
+        m = document.createElementNS(NS, "line");
+        m.setAttributeNS(null, "x1", "20");
+        m.setAttributeNS(null, "y1", "50");
+        m.setAttributeNS(null, "x2", "10");
+        m.setAttributeNS(null, "y2", "50");
+        m.setAttribute("class", "marker");
+        svg.append(m);
 
+        m = document.createElementNS(NS, "line");
+        m.setAttributeNS(null, "x1", "50");
+        m.setAttributeNS(null, "y1", "10");
+        m.setAttributeNS(null, "x2", "50");
+        m.setAttributeNS(null, "y2", "20");
+        m.setAttribute("class", "marker");
+        svg.append(m);
+
+        m = document.createElementNS(NS, "line");
+        m.setAttributeNS(null, "x1", "50");
+        m.setAttributeNS(null, "y1", "80");
+        m.setAttributeNS(null, "x2", "50");
+        m.setAttributeNS(null, "y2", "90");
+        m.setAttribute("class", "marker");
+        svg.append(m);
 
 
         //polarAngle = -90;
