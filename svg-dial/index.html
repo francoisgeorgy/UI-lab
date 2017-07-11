@@ -114,6 +114,11 @@
     var cursorEnd = 30;            // 20% of radius
     var cursorOnly = false; //TODO
     var rotation = CW;
+    var valueMin = 0.0;
+    var valueMax = 100.0;
+    var valueResolution = 0.1;      // null means ignore
+    var valueStep = null;           // null means ignore
+
 
     // NOTE: viewBox must be 100x120: 100x100 for the arc and 100x20 below for the label.
 
@@ -146,6 +151,23 @@
 
     var mouseWheelDirection = 1;
 
+    var value = 0.0;
+
+
+    function getValue() {
+        //formula: Result := ((Input - InputLow) / (InputHigh - InputLow)) * (OutputHigh - OutputLow) + OutputLow;
+        let i = polarToDialAngle(polarAngle);
+        console.log(`getValue ${polarAngle} --> ${i}`);
+        let v = ((i - arcMin) / (arcMax - arcMin)) * (valueMax - valueMin) + valueMin;
+        if (valueResolution === null) {
+            return v;
+        }
+
+    }
+
+//    function setValue(v) {
+//    }
+
     /**
      * Angle in degrees in polar coordinates (0 degrees at 3 o'clock)
      */
@@ -153,9 +175,14 @@
         let a = (angle + 360.0) % 360.0;    // we add 360 to handle negative values down to -360
         // apply boundaries
         let b = polarToDialAngle(a);
-        if ((b < arcMin) || (b > arcMax)) {
-            console.log(`ignore ${b}`);
-            return;
+//        if ((b < arcMin) || (b > arcMax)) {
+//            console.log(`ignore ${b}`);
+//            return;
+//        }
+        if (b < arcMin) {
+            a = minAngle;
+        } else if (b > arcMax) {
+            a = maxAngle;
         }
         polarAngle = a;
     }
@@ -288,6 +315,7 @@
         //TODO: setLabel()
         //TODO: setValue()
         currentTarget.childNodes[1].textContent = polarToDialAngle(getPolarAngle()).toFixed(0);
+        currentTarget.childNodes[2].textContent = getValue().toFixed(3);
         currentTarget.childNodes[3].setAttributeNS(null, "d", getPath(getPolarAngle()));
     }
 
