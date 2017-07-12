@@ -10,8 +10,8 @@
             margin: 40px 20px;
         }
         .dial {
-            height: 50vh;   /* 20% of viewport height */
-            /*height: 120px;*/
+            /*height: 50vh;   !* 20% of viewport height *!*/
+            height: 400px;
             background-color: #ccc;
             display: block;
         }
@@ -325,7 +325,30 @@
      */
     function mouseUpdate(e) {
 
-//        console.log(`mouse d = ${e.offsetX}, ${e.offsetY}`);
+        console.log(`mouseUpdate offsets = ${e.offsetX}, ${e.offsetY}`);
+
+        var offX = e.offsetX;
+        var offY = e.offsetY;
+
+//        https://stackoverflow.com/questions/11334452/event-offsetx-in-firefox
+//        var offX = e.pageX - $(e.currentTarget).offset().left;
+//        var offY = e.pageY - $(e.currentTarget).offset().top;
+//        console.log(`mouseUpdate off = ${offX}, ${offY}`);
+
+//        http://www.jacklmoore.com/notes/mouse-position/
+//        var target = e.target || e.srcElement,
+//            rect = target.getBoundingClientRect(),
+//            offX = e.clientX - rect.left,
+//            offY = e.clientY - rect.top;
+
+//        var offX = (e.offsetX !== undefined) ? e.offsetX : (e.layerX - e.target.offsetLeft);
+//        var offY = (e.offsetY !== undefined) ? e.offsetY : (e.layerY - e.target.offsetTop);
+//        var offX = (e.layerX - e.target.offsetLeft);
+//        var offY = (e.layerY - e.target.offsetTop);
+//        var offX = (e.originalEvent.layerX - e.target.offsetLeft);
+//        var offY = (e.originalEvent.layerY - e.target.offsetTop);
+
+        console.log(`mouseUpdate off = ${offX}, ${offY}`);
 
         // (e.offsetX, e.offsetY) == (0, 0) at top-left corner of <svg> viewBox.
 
@@ -333,8 +356,10 @@
         // <svg> center:       (dx, dy) == ( 0,  0)
         // <svg> top-left:     (dx, dy) == (-1,  1)
         // <svg> bottom-right: (dx, dy) == ( 1, -1) (bottom right of the 100x100 viewBox, ignoring the bottom 100x20 for the label)
-        let dx = (e.offsetX - arcCenterXPixels) / (targetRect.width / 2);
-        let dy = - (e.offsetY - arcCenterYPixels) / (targetRect.width / 2);  // targetRect.width car on a 20px de plus en hauteur pour le label
+//        let dx = (e.offsetX - arcCenterXPixels) / (targetRect.width / 2);
+//        let dy = - (e.offsetY - arcCenterYPixels) / (targetRect.width / 2);  // targetRect.width car on a 20px de plus en hauteur pour le label
+        let dx = (offX - arcCenterXPixels) / (targetRect.width / 2);
+        let dy = - (offY - arcCenterYPixels) / (targetRect.width / 2);  // targetRect.width car on a 20px de plus en hauteur pour le label
 
         if (rotation === CCW) dx = - dx;
 
@@ -357,6 +382,33 @@
     function startDrag(e) {
 
         e.preventDefault();
+
+        console.group("startDrag");
+
+        // API:
+        // event.currentTarget : DOM Event Interface
+        //                       The EventTarget whose EventListeners are currently being processed.
+        //                       As the event capturing and bubbling occurs this value changes.
+        // Event.currentTarget : Identifies the current target for the event, as the event traverses the DOM.
+        //                       It always refers to the element to which the event handler has been attached, as
+        //                       opposed to event.target which identifies the element on which the event occurred.
+
+        console.log('startDrag e', e);
+
+        console.log(`startDrag clientXY ${e.clientX}, ${e.clientY}`);
+
+//        console.log('startDrag target', e.target);
+//        console.log('startDrag target.getBoundingClientRect', e.target.getBoundingClientRect());
+
+        console.log('startDrag currentTarget', e.currentTarget);
+        console.log('startDrag currentTarget.getBoundingClientRect', e.currentTarget.getBoundingClientRect());
+
+        console.log('startDrag document.body.scroll', document.body.scrollLeft, document.body.scrollTop);
+
+        // https://stackoverflow.com/questions/28633221/document-body-scrolltop-firefox-returns-0-only-js
+        let scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+
+        console.log(`startDrag correction ${e.clientY} + ${scrollTop} = ${e.clientY + scrollTop}`);
 
         // API: Event.currentTarget
         //      Identifies the current target for the event, as the event traverses the DOM. It always REFERS TO THE ELEMENT
@@ -386,6 +438,9 @@
 
         document.addEventListener('mousemove', this.handleDrag, false);
         document.addEventListener('mouseup', this.endDrag, false);
+
+
+        console.groupEnd();
 
         mouseUpdate(e);
 
