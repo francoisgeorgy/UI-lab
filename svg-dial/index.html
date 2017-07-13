@@ -329,52 +329,54 @@
      */
     function mouseUpdate(e) {
 
-        console.log(`mouseUpdate offsets = ${e.offsetX}, ${e.offsetY}`);
+        // MouseEvent.clientX (standard property: YES)
+        // The clientX read-only property of the MouseEvent interface provides
+        // the horizontal coordinate within the application's client area at which
+        // the event occurred (as opposed to the coordinates within the page).
+        // For example, clicking in the top-left corner of the client area will always
+        // result in a mouse event with a clientX value of 0, regardless of whether
+        // the page is scrolled horizontally. Originally, this property was defined
+        // as a long integer. The CSSOM View Module redefined it as a double float.
 
-        var offX = e.offsetX;
-        var offY = e.offsetY;
+        //console.log(`clientXY: ${e.clientX}, ${e.clientY}`, e);
 
-//        https://stackoverflow.com/questions/11334452/event-offsetx-in-firefox
-//        var offX = e.pageX - $(e.currentTarget).offset().left;
-//        var offY = e.pageY - $(e.currentTarget).offset().top;
-//        console.log(`mouseUpdate off = ${offX}, ${offY}`);
+        // Event.currentTarget (standard property: YES)
+        // Identifies the current target for the event, as the event traverses
+        // the DOM. It always refers to the element to which the event handler
+        // has been attached, as opposed to event.target which identifies the
+        // element on which the event occurred.
 
-//        http://www.jacklmoore.com/notes/mouse-position/
-//        var target = e.target || e.srcElement,
-//            rect = target.getBoundingClientRect(),
-//            offX = e.clientX - rect.left,
-//            offY = e.clientY - rect.top;
+        //let t = e.currentTarget;
 
-//        var offX = (e.offsetX !== undefined) ? e.offsetX : (e.layerX - e.target.offsetLeft);
-//        var offY = (e.offsetY !== undefined) ? e.offsetY : (e.layerY - e.target.offsetTop);
-//        var offX = (e.layerX - e.target.offsetLeft);
-//        var offY = (e.layerY - e.target.offsetTop);
-//        var offX = (e.originalEvent.layerX - e.target.offsetLeft);
-//        var offY = (e.originalEvent.layerY - e.target.offsetTop);
+        // Element.getBoundingClientRect() (standard: YES)
+        // The Element.getBoundingClientRect() method returns the size of an element
+        // and its position relative to the viewport.
+        // The amount of scrolling that has been done of the viewport area (or any other             // scrollable element) is taken into account when computing the bounding rectangle.
+        // This means that the rectangle's boundary edges (top, left, bottom, and right)
+        // change their values every time the scrolling position changes (because their
+        // values are relative to the viewport and not absolute).
 
-        console.log(`mouseUpdate off = ${offX}, ${offY}`);
+        //let r = e.currentTarget.getBoundingClientRect();
 
-        // (e.offsetX, e.offsetY) == (0, 0) at top-left corner of <svg> viewBox.
+        let dxPixels = e.clientX - targetRect.left;
+        let dyPixels = e.clientY - targetRect.top;
 
         // mouse delta in cartesian coordinate with path center=0,0 and scaled (-1..0..1) relative to path:
         // <svg> center:       (dx, dy) == ( 0,  0)
         // <svg> top-left:     (dx, dy) == (-1,  1)
         // <svg> bottom-right: (dx, dy) == ( 1, -1) (bottom right of the 100x100 viewBox, ignoring the bottom 100x20 for the label)
-//        let dx = (e.offsetX - arcCenterXPixels) / (targetRect.width / 2);
-//        let dy = - (e.offsetY - arcCenterYPixels) / (targetRect.width / 2);  // targetRect.width car on a 20px de plus en hauteur pour le label
-        let dx = (offX - arcCenterXPixels) / (targetRect.width / 2);
-        let dy = - (offY - arcCenterYPixels) / (targetRect.width / 2);  // targetRect.width car on a 20px de plus en hauteur pour le label
+        let dx = (dxPixels - arcCenterXPixels) / (targetRect.width / 2);
+        let dy = - (dyPixels - arcCenterYPixels) / (targetRect.width / 2);  // targetRect.width car on a 20px de plus en hauteur pour le label
 
         if (rotation === CCW) dx = - dx;
 
-        console.log(`mouse cartesian coord = ${dx}, ${dy}`);
 
         // convert to polar coordinates
         let angle_rad = Math.atan2(dy, dx);
 
         if (angle_rad < 0) angle_rad = 2.0*Math.PI + angle_rad;
 
-        console.log(`mouseUpdate: angle_rad ${angle_rad}`);
+        console.log(`mouseUpdate: position in svg = ${dxPixels}, ${dyPixels} pixels; ${dx.toFixed(3)}, ${dy.toFixed(3)} rel.; angle ${angle_rad.toFixed(3)} rad`);
 
         setPolarAngle(angle_rad * 180.0 / Math.PI);     // rads to degs
 
@@ -387,7 +389,7 @@
 
         e.preventDefault();
 
-        console.group("startDrag");
+        //console.group("startDrag");
 
         // API:
         // event.currentTarget : DOM Event Interface
@@ -396,23 +398,12 @@
         // Event.currentTarget : Identifies the current target for the event, as the event traverses the DOM.
         //                       It always refers to the element to which the event handler has been attached, as
         //                       opposed to event.target which identifies the element on which the event occurred.
-
+/*
         console.log('startDrag e', e);
-
         console.log(`startDrag clientXY ${e.clientX}, ${e.clientY}`);
-
-//        console.log('startDrag target', e.target);
-//        console.log('startDrag target.getBoundingClientRect', e.target.getBoundingClientRect());
-
         console.log('startDrag currentTarget', e.currentTarget);
         console.log('startDrag currentTarget.getBoundingClientRect', e.currentTarget.getBoundingClientRect());
-
-        console.log('startDrag document.body.scroll', document.body.scrollLeft, document.body.scrollTop);
-
-        // https://stackoverflow.com/questions/28633221/document-body-scrolltop-firefox-returns-0-only-js
-        let scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-
-        console.log(`startDrag correction ${e.clientY} + ${scrollTop} = ${e.clientY + scrollTop}`);
+*/
 
         // API: Event.currentTarget
         //      Identifies the current target for the event, as the event traverses the DOM. It always REFERS TO THE ELEMENT
@@ -424,7 +415,6 @@
 
         // get the boundingRect of the <svg> object. The coordinates are in viewport's pixels.
         targetRect = currentTarget.getBoundingClientRect(); // currentTarget must be the <svg...> object
-//        console.log('startDrag targetRect', targetRect);
 
         // API: Element.getBoundingClientRect()
         //      The Element.getBoundingClientRect() method returns the size of an element and its position RELATIVE TO THE VIEWPORT.
@@ -443,8 +433,7 @@
         document.addEventListener('mousemove', this.handleDrag, false);
         document.addEventListener('mouseup', this.endDrag, false);
 
-
-        console.groupEnd();
+        //console.groupEnd();
 
         mouseUpdate(e);
 
