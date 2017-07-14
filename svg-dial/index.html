@@ -63,6 +63,8 @@
 </body>
 <script>
 
+    "use strict";
+
     // TODO: add contextual menu (with https://github.com/sdkcarlos/our-context-menu ?)
     // Use https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/data-* to define contextual menu?
 
@@ -431,8 +433,8 @@
 
 //        console.log(`startDrag arc center = ${arcCenterXPixels}, ${arcCenterYPixels}`);
 
-        document.addEventListener('mousemove', this.handleDrag, false);
-        document.addEventListener('mouseup', this.endDrag, false);
+        document.addEventListener('mousemove', handleDrag, false);
+        document.addEventListener('mouseup', endDrag, false);
 
         //console.groupEnd();
 
