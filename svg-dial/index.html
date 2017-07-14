@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>svg in nested grid</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>-->
     <style>
         body {
             padding: 0;
@@ -31,7 +31,7 @@
         }
         .back {
             stroke: #aaa;
-            stroke-width: 4px;
+            stroke-width: 6px;
             fill: transparent;
         }
         .marker {
@@ -160,6 +160,7 @@
 
 
     function getValue() {
+//        console.log('getValue', polarAngle);
         //formula: Result := ((Input - InputLow) / (InputHigh - InputLow)) * (OutputHigh - OutputLow) + OutputLow;
         let i = polarToDialAngle(polarAngle);
         console.log(`getValue ${polarAngle} --> ${i}`);
@@ -467,27 +468,37 @@
 
     function mouseWheelHandler(e) {
 
+        // WheelEvent
+        // This is the standard wheel event interface to use. Old versions of browsers implemented the two non-standard
+        // and non-cross-browser-compatible MouseWheelEvent and MouseScrollEvent interfaces. Use this interface and avoid
+        // the latter two.
+        // The WheelEvent interface represents events that occur due to the user moving a mouse wheel or similar input device.
+
         // https://stackoverflow.com/questions/5527601/normalizing-mousewheel-speed-across-browsers
         // https://github.com/facebook/fixed-data-table/blob/master/src/vendor_upstream/dom/normalizeWheel.js
 
         // cross-browser wheel delta
-        var e = window.event || e; // old IE support
+//        var e = window.event || e; // old IE support
 
         e.preventDefault();
 
-        if (e.deltaY != 0) {
+//        console.log(e);
+
+        let dy = e.deltaY;
+
+        if (dy != 0) {
             // normalize Y delta
-            if (minDeltaY > Math.abs(e.deltaY) || !minDeltaY) {
-                minDeltaY = Math.abs(e.deltaY);
+            if (minDeltaY > Math.abs(dy) || !minDeltaY) {
+                minDeltaY = Math.abs(dy);
             }
         }
 
-        console.log('mouse wheel', e.wheelDelta, e.wheelDeltaX, e.wheelDeltaY, e.detail);
+        console.log('mouse wheel', dy, minDeltaY, dy / minDeltaY, polarAngle);
 
         // important!
         currentTarget = e.currentTarget;
 
-        incPolarAngle(mouseWheelDirection * (e.deltaY / minDeltaY));     // TODO: make mousewheel direction configurable
+        incPolarAngle(mouseWheelDirection * (dy / minDeltaY));     // TODO: make mousewheel direction configurable
 
 //        let p = getPath(currentAngle * Math.PI / 180.0);
 //        let p = getPath(getPolarAngle());
@@ -495,14 +506,18 @@
         // TODO: timing --> speed
         // https://stackoverflow.com/questions/22593286/detect-measure-scroll-speed
 
-//        currentTarget.childNodes[0].textContent = getDialAngle().toFixed(0);
-//        currentTarget.childNodes[2].setAttributeNS(null, "d", p);
         updateDial();
 
         return false;
     }
 
+/*
 
+    function mouseWheelEvent(e) {
+        var delta = e.wheelDelta ? e.wheelDelta : -e.detail;
+        console.log(delta);
+    }
+*/
 
 
     // https://developer.mozilla.org/en/docs/Web/SVG/Namespaces_Crash_Course
@@ -613,17 +628,44 @@
 
         //polarAngle = -90;
 
-        $(svg).on("mousedown", function(e) {
+//        $(svg).on("mousedown", function(e) {
+//            startDrag(e);
+//        });
+//        $(svg).on("wheel", function(e) {
+//            mouseWheelHandler(e);
+//        });
+
+        svg.addEventListener("mousedown", function(e) {
             startDrag(e);
         });
-        $(svg).on("mousewheel", function(e) {
+        svg.addEventListener("wheel", function(e) {
             mouseWheelHandler(e);
         });
 
+/*
+        // For Chrome
+        $(svg).on("mousewheel", function(e) {
+            mouseWheelEvent(e);
+        });
+        // For Firefox
+        $(svg).on("DOMMouseScroll", function(e) {
+            mouseWheelEvent(e);
+        });
+*/
+
         return svg;
     }
+/*
 
     $(function () {
+        var dials = document.querySelectorAll('svg.dial');
+        [].forEach.call(dials, function(item) {
+            createDial(item, 300.0, "Foo bar");
+        });
+    });
+*/
+
+    document.addEventListener("DOMContentLoaded", function(event) {
         var dials = document.querySelectorAll('svg.dial');
         [].forEach.call(dials, function(item) {
             createDial(item, 300.0, "Foo bar");
